@@ -6,26 +6,36 @@
 
 ## ✨ 特性亮点 (Highlights)
 
-- 🌟 **Gemini Four-Color Light（Gemini 四色浅色流光主题）**
-  - 融合 Gemini 标志性四色与微光渐变，低饱和度护眼设计。
-  - 细节精雕：顶栏、侧边栏、对话气泡、代码块、卡片完美融入，彻底消除白框与背景色差。
-- 🌊 **Sky Light（天青浅色主题）**
+- 🌈 **四色极光（Gemini Four-Color Light）**
+  - 融合 Gemini 标志性四色与微光渐变，低饱和度护眼设计，原生标题栏无缝零色差融合。
+- ☀️ **蔚蓝晴空（Sky Light）**
   - 宁静清澈的天青色系，纯净现代的极简开发体验。
+- 🍃 **碧水青波（Cyan Light）**
+  - 清新薄荷水波与碧青色调，温润透亮，护眼舒适。
+- 🌅 **落霞暖橙（Orange Light）**
+  - 温暖落日晚霞与暖阳橙色调，带来温润柔和的心流沉浸感。
+- 🌺 **丹霞绯红（Red Light）**
+  - 优雅海棠山茶柔粉绯红，高雅明亮，绝不刺眼。
+- 🎛️ **免刷新即时换肤引擎（Built-in Theme Switcher）**
+  - 右上角内置精致毛玻璃动态等宽下拉菜单，全量统一为工整的 4 字名称体系，点击任意主题毫秒级免刷新无缝换肤。
 - 🌈 **交互式流光胶囊滚动条（Next-Gen Overlay Scrollbars）**
-  - **日常状态**：`5px` 极简半透明冰川蓝圆角胶囊（`rgba(95, 138, 230, 0.42)`），安静不打扰视野。
-  - **悬停 / 拖拽状态**：优雅延展至 `6px`，并渐变为 **Gemini 经典蓝 → 星云紫 → 珊瑚粉三色流光渐变**（`linear-gradient(180deg, #4285f4, #9b72cb, #d96570)`），带来灵动细腻的操作反馈。
+  - **日常状态**：`5px` 极简半透明圆角胶囊，安静不打扰视野。
+  - **悬停 / 拖拽状态**：优雅延展至 `6px`，并渐变为主色流光，带来灵动细腻的操作反馈。
   - **原生 React Portal 接管**：直接深度接管 Antigravity 原生虚拟滚动条组件，彻底告别原版粗灰条，并从底层消灭原生滚动条与虚拟滚动条并存的“双滚动条”BUG。
-- ⚡ **秒级热重载**：保存 CSS 文件后在 Antigravity 内按 `Ctrl + R` 即可实时生效，免重启。
 
 ---
 
 ## 📁 文件说明 (Directory Structure)
 
 ```text
-├── gemini-light.css   # Gemini 四色流光浅色主题源文件（含悬停彩条滚动条）
-├── sky-light.css      # 天青浅色主题源文件
-├── current.css        # Antigravity 当前实际加载生效的主题文件
-├── current.js         # 主题辅助注入脚本
+├── gemini-light.css   # 四色极光浅色主题源文件（含悬停彩条滚动条）
+├── sky-light.css      # 蔚蓝晴空浅色主题源文件（结构母版）
+├── cyan-light.css     # 碧水青波浅色主题源文件
+├── orange-light.css   # 落霞暖橙浅色主题源文件
+├── red-light.css      # 丹霞绯红浅色主题源文件
+├── current.css        # Antigravity 静态样式文件（由 current.js 统一管理）
+├── current.js         # 主题辅助注入脚本（含下拉换肤选择器与大图/图表纯透明穿透）
+├── build_themes.py    # 主题打包编译与自动多端分发脚本
 ├── stock.css          # 原版备用空样式表
 ├── 指南.md            # 完整架构、选择器索引与深度维护指南
 ├── README.md          # 项目说明文档

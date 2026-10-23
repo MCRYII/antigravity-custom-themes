@@ -155,8 +155,9 @@ div[class*="flex-col"][class*="bg-sidebar"] {
 
 /* 关键：app 给每个项目分组（综合工作台/校园跑测试/STM32…）都套了一层
    嵌套 .bg-sidebar，如果一并吃玻璃规则，就会变成一块块浅蓝色塑料积木。
-   所以嵌套层必须彻底透明 + 去掉 backdrop-filter。 */
-.bg-sidebar .bg-sidebar:not([data-index="0"]) {
+   所以嵌套层必须彻底透明 + 去掉 backdrop-filter。
+   ⚠️ 约束：必须限制在纵向侧栏（div[class*="flex-col"][class*="bg-sidebar"]）内，坚决杜绝误杀顶栏 title-menu-bar 下的下拉菜单！ */
+div[class*="flex-col"][class*="bg-sidebar"] .bg-sidebar:not([data-index="0"]) {
   background-color: transparent !important;
   background-image: none !important;
   backdrop-filter: none !important;
@@ -199,7 +200,7 @@ div[class*="flex-col"][class*="bg-sidebar"] {
 }
 
 /* 彻底保证所有项目文件夹与会话分组绝对通透，零底色零边框零积木 */
-.bg-sidebar .bg-sidebar:not([data-index="0"]),
+div[class*="flex-col"][class*="bg-sidebar"] .bg-sidebar:not([data-index="0"]),
 .bg-sidebar div[data-sidebar-section-drop-id]:not([data-index="0"]),
 .bg-sidebar div:has(> [data-testid="section-header"]):not([data-index="0"]) {
   background: transparent !important;
@@ -391,6 +392,41 @@ div[class*="absolute"][class*="left-0"][class*="top-0"] button:hover,
 div[class*="absolute"][class*="right-0"][class*="top-0"] button:hover {
   background-color: rgba(255, 255, 255, 0.55) !important;
   border-radius: 6px !important;
+}
+
+/* 顶栏工具栏中的主题切换按钮：100% 对齐 Open IDE 原生幽灵透明按钮风格，去除死白底色与阴影 */
+#antigravity-theme-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 24px !important;
+  width: auto !important;
+  min-width: unset !important;
+  max-width: none !important;
+  padding: 0 8px !important;
+  white-space: nowrap !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  font-family: inherit !important;
+  color: inherit !important;
+  background: transparent !important;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.35)) !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  flex: 0 0 auto !important;
+  gap: 5px !important;
+  line-height: 1 !important;
+}
+
+#antigravity-theme-btn span {
+  white-space: nowrap !important;
+  line-height: 1 !important;
+}
+
+#antigravity-theme-btn:hover {
+  background-color: rgba(255, 255, 255, 0.25) !important;
 }
 
 
@@ -690,14 +726,18 @@ div[role="menu"],
   border-radius: 6px !important;
 }
 
-/* 顶栏 File/View/Window 展开的下拉 */
-[data-testid="title-menu-bar"] [class*="border-menu-border"] {
+/* 顶栏 File/View/Window 展开的下拉菜单（保证实底、边框与投影，坚决不透底） */
+[data-testid="title-menu-bar"] [class*="border-menu-border"],
+[data-testid="title-menu-bar"] div[class*="bg-sidebar"],
+[data-testid="title-menu-bar"] [role="menu"] {
   background-color: #FAF8FF !important;
+  background-image: none !important;
   backdrop-filter: blur(24px) !important;
   -webkit-backdrop-filter: blur(24px) !important;
-  border: 1px solid rgba(186, 197, 240, 0.75) !important;
+  border: 1px solid rgba(186, 197, 240, 0.85) !important;
   border-radius: 10px !important;
-  box-shadow: 0 12px 32px rgba(46, 56, 128, 0.22) !important;
+  box-shadow: 0 12px 32px rgba(46, 56, 128, 0.22), 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  opacity: 1 !important;
 }
 
 [data-testid="title-menu-bar-option"] {
@@ -1070,6 +1110,93 @@ button[data-testid="aux-pane-new-tab-button"]:hover {
   fill: currentColor !important;
   color: inherit !important;
 }
+
+/* === 17. 页面吸顶标头与搜索区（Conversation History、Customizations 等）：视口固定渐变实底遮罩 ===
+   修复吸顶标头因 --background 为 transparent 导致的滚动文字/卡片穿透重叠 */
+div[class*="sticky"][class*="top-0"]:has(> h1),
+div[class*="sticky"][class*="top-0"]:has(> div > h1),
+div[class*="sticky"][class*="top-0"]:has(input[data-testid="history-search-input"]),
+div[class*="sticky"][class*="top-0"]:has(input[data-testid="customizations-search"]) {
+  background-color: #F8FAFD !important;
+  background-image: var(--gem-mesh) !important;
+  background-attachment: fixed !important;
+  background-position: 0 0 !important;
+  background-size: 100vw 100vh !important;
+  background-repeat: no-repeat !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* 历史记录与插件页面内搜索框：柔白微实底与精致描边，不透底 */
+div:has(> input[data-testid="history-search-input"]),
+div:has(> input[data-testid="customizations-search"]) {
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.95) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 4px rgba(66, 133, 244, 0.08) !important;
+}
+
+div:has(> input[data-testid="history-search-input"]):focus-within,
+div:has(> input[data-testid="customizations-search"]):focus-within {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: #1A73E8 !important;
+  box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.22) !important;
+}
+
+/* 历史记录页废弃提示条（This page is going away soon）：柔白实底微卡，不透底 */
+div[class*="sticky"][class*="top-0"] div[class*="bg-card"]:has(svg) {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(186, 197, 240, 0.75) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 2px 10px rgba(66, 133, 244, 0.08) !important;
+}
+
+/* === 18. 交互问答卡片（ask_question 仅对选中项高亮）：适配 Gemini 标志性浅冰蓝 ===
+   修复原因：主题全局将 --secondary 置为 transparent，导致选项选中时无法区分。
+   规范要求：仅当选项被点击选中时显示高亮变化；未选中的选项不添加任何规则，100% 保持原有外观。 */
+
+/* 18.1 仅选中态（Checked / Selected）：整行显现 Gemini 浅冰蓝质感胶囊背景与发丝描边 */
+label[data-testid="ask-question-option"]:has(input:checked),
+label[data-testid="ask-question-option"][class~="bg-secondary"],
+label:has(> textarea[data-testid="ask-question-writein"]):has(input:checked),
+label:has(> textarea[data-testid="ask-question-writein"])[class~="bg-secondary"],
+label:has(> div > textarea[data-testid="ask-question-writein"]):has(input:checked),
+label:has(> div > textarea[data-testid="ask-question-writein"])[class~="bg-secondary"],
+label[for*="__write_in__"]:has(input:checked),
+label[for*="__write_in__"][class~="bg-secondary"] {
+  background-color: rgba(66, 133, 244, 0.12) !important;
+  border-color: rgba(66, 133, 244, 0.32) !important;
+  box-shadow: 0 1px 4px rgba(66, 133, 244, 0.10) !important;
+}
+
+/* 18.2 仅选中态下的序号徽标：清澈 Google 蓝高亮（未选中的序号不作任何修改） */
+label[data-testid="ask-question-option"]:has(input:checked) div[class*="bg-border"],
+label[data-testid="ask-question-option"][class~="bg-secondary"] div[class*="bg-border"],
+label[for*="__write_in__"]:has(input:checked) div[class*="bg-border"],
+label[for*="__write_in__"][class~="bg-secondary"] div[class*="bg-border"] {
+  background-color: rgba(26, 115, 232, 0.20) !important;
+}
+label[data-testid="ask-question-option"]:has(input:checked) div[class*="bg-border"] span,
+label[data-testid="ask-question-option"][class~="bg-secondary"] div[class*="bg-border"] span,
+label[for*="__write_in__"]:has(input:checked) div[class*="bg-border"] span,
+label[for*="__write_in__"][class~="bg-secondary"] div[class*="bg-border"] span {
+  color: #1A73E8 !important;
+  font-weight: 700 !important;
+}
+
+/* 18.3 仅选中态下的选项文字：深靛蓝加粗清晰显现 */
+label[data-testid="ask-question-option"]:has(input:checked) [data-testid="ask-question-option-text"],
+label[data-testid="ask-question-option"][class~="bg-secondary"] [data-testid="ask-question-option-text"] {
+  color: #1B2A4A !important;
+  font-weight: 600 !important;
+}
+
+
+
 
 
 

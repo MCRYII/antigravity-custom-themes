@@ -18,12 +18,15 @@ def read_file(filename):
 def main():
     gemini_css = read_file("gemini-light.css")
     sky_css = read_file("sky-light.css")
+    cyan_css = read_file("cyan-light.css")
+    orange_css = read_file("orange-light.css")
+    red_css = read_file("red-light.css")
 
     # 构建主题数据元信息
     themes_data = [
         {
             "id": "gemini",
-            "name": "Gemini 四色",
+            "name": "四色极光",
             "icon": "🌈",
             "titlebarColor": "#E9F0FE",
             "symbolColor": "#1B2A4A",
@@ -36,6 +39,30 @@ def main():
             "titlebarColor": "#7EC8F6",
             "symbolColor": "#1B2A4A",
             "css": sky_css
+        },
+        {
+            "id": "cyan",
+            "name": "碧水青波",
+            "icon": "🍃",
+            "titlebarColor": "#63D2C6",
+            "symbolColor": "#0F3834",
+            "css": cyan_css
+        },
+        {
+            "id": "orange",
+            "name": "落霞暖橙",
+            "icon": "🌅",
+            "titlebarColor": "#FFA066",
+            "symbolColor": "#4A1E06",
+            "css": orange_css
+        },
+        {
+            "id": "red",
+            "name": "丹霞绯红",
+            "icon": "🌺",
+            "titlebarColor": "#F77E90",
+            "symbolColor": "#451119",
+            "css": red_css
         },
         {
             "id": "stock",
@@ -89,8 +116,16 @@ def main():
         styleEl.textContent = theme.css;
 
         // 同步更新原生标题栏按钮底色（零色差融合）
+        enforceTitleBarColor();
+
+        updateSelectorUI(theme.id);
+    }}
+
+    // 强制校准原生标题栏覆盖色（防御 React 挂载后重设为纯白）
+    function enforceTitleBarColor() {{
         if (!modalOpen) {{
             const isDark = document.documentElement.classList.contains('dark');
+            const theme = getTheme(getActiveThemeId());
             const color = isDark ? '#18181B' : (theme.titlebarColor || '#F3F3F3');
             const symbolColor = isDark ? '#FFFFFF' : (theme.symbolColor || '#1B2A4A');
             savedSidebarColor = color;
@@ -100,8 +135,6 @@ def main():
                 height: 30
             }});
         }}
-
-        updateSelectorUI(theme.id);
     }}
 
     // 更新胶囊与下拉项的选中标记
@@ -114,15 +147,13 @@ def main():
 
         document.querySelectorAll('.antigravity-theme-item').forEach(el => {{
             const tid = el.dataset.themeId;
-            const check = el.querySelector('.theme-check');
             const isCurrent = tid === activeId;
-            if (check) check.style.visibility = isCurrent ? 'visible' : 'hidden';
             el.style.background = isCurrent ? 'rgba(66, 133, 244, 0.12)' : 'transparent';
             el.style.fontWeight = isCurrent ? '600' : 'normal';
         }});
     }}
 
-    // 挂载右上角胶囊与下拉菜单
+    // 挂载右上角主题选择器
     function mountThemeSelector() {{
         const toolbar = document.querySelector('[data-testid="pane-titlebar-toolbar"]');
         if (!toolbar) return;
@@ -143,11 +174,16 @@ def main():
         const btn = document.createElement('button');
         btn.id = 'antigravity-theme-btn';
         btn.setAttribute('type', 'button');
+
+        // 浅白磨砂卡片按钮：对标原版高质感微立体视觉，不塌陷，半透微磨砂
         btn.style.cssText = `
             display: inline-flex;
             align-items: center;
             justify-content: center;
             height: 26px;
+            width: auto;
+            min-width: unset;
+            max-width: none;
             padding: 0 8px;
             font-size: 12px;
             font-weight: 500;
@@ -163,12 +199,16 @@ def main():
             outline: none;
             gap: 5px;
             font-family: inherit;
+            line-height: 1;
+            white-space: nowrap;
+            flex: 0 0 auto;
+            user-select: none;
         `;
 
         btn.innerHTML = `
-            <span id="antigravity-theme-icon" style="font-size: 13px; line-height: 1;">${{currentTheme.icon}}</span>
-            <span id="antigravity-theme-label" style="line-height: 1;">${{currentTheme.name}}</span>
-            <span style="font-size: 9px; opacity: 0.6; line-height: 1; margin-left: 1px;">▾</span>
+            <span id="antigravity-theme-icon" style="font-size: 13px; line-height: 1; display: inline-block;">${{currentTheme.icon}}</span>
+            <span id="antigravity-theme-label" style="line-height: 1; display: inline-block; white-space: nowrap;">${{currentTheme.name}}</span>
+            <span style="font-size: 9px; opacity: 0.6; line-height: 1; margin-left: 1px; display: inline-block;">▾</span>
         `;
 
         btn.onmouseenter = () => {{
@@ -197,10 +237,10 @@ def main():
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(0, 0, 0, 0.08);
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.08);
-            padding: 6px;
-            min-width: 150px;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
+            padding: 4px;
+            box-sizing: border-box;
             max-height: 280px;
             overflow-y: auto;
             scrollbar-width: thin;
@@ -216,9 +256,9 @@ def main():
             item.style.cssText = `
                 display: flex;
                 align-items: center;
-                justify-content: space-between;
-                padding: 7px 12px;
-                border-radius: 8px;
+                justify-content: flex-start;
+                padding: 6px 8px;
+                border-radius: 6px;
                 font-size: 12px;
                 cursor: pointer;
                 color: #1B2A4A;
@@ -226,13 +266,13 @@ def main():
                 margin-bottom: 2px;
                 font-weight: ${{isCurrent ? '600' : 'normal'}};
                 background: ${{isCurrent ? 'rgba(66, 133, 244, 0.12)' : 'transparent'}};
+                box-sizing: border-box;
             `;
             item.innerHTML = `
-                <span style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 14px;">${{t.icon}}</span>
-                    <span>${{t.name}}</span>
+                <span style="display: inline-flex; align-items: center; gap: 6px; width: 100%;">
+                    <span style="font-size: 13px; line-height: 1; flex: 0 0 auto;">${{t.icon}}</span>
+                    <span style="font-size: 12px; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${{t.name}}</span>
                 </span>
-                <span class="theme-check" style="font-size: 11px; font-weight: bold; color: #1A73E8; visibility: ${{isCurrent ? 'visible' : 'hidden'}};">✓</span>
             `;
 
             item.onmouseenter = () => {{
@@ -255,8 +295,11 @@ def main():
         function updateDropdownPosition() {{
             const rect = btn.getBoundingClientRect();
             dropdown.style.top = `${{rect.bottom + 6}}px`;
-            dropdown.style.right = `${{Math.max(8, window.innerWidth - rect.right)}}px`;
-            dropdown.style.left = 'auto';
+            dropdown.style.left = `${{rect.left}}px`;
+            dropdown.style.right = 'auto';
+            dropdown.style.width = `${{rect.width}}px`;
+            dropdown.style.minWidth = 'unset';
+            dropdown.style.boxSizing = 'border-box';
         }}
 
         btn.onclick = (e) => {{
@@ -314,18 +357,11 @@ def main():
                     color: 'rgba(0, 0, 0, 0)',
                     symbolColor: 'rgba(0, 0, 0, 0)'
                 }});
-            }} else if (!modal && modalOpen) {{
-                modalOpen = false;
-                const theme = getTheme(getActiveThemeId());
-                const isDark = document.documentElement.classList.contains('dark');
-                const themeSidebar = theme.titlebarColor || savedSidebarColor || (isDark ? '#18181B' : '#E9F0FE');
-                const symbolColor = theme.symbolColor || (isDark ? '#FFFFFF' : '#1B2A4A');
-
-                window.electronNative?.setTitleBarOverlay?.({{
-                    color: themeSidebar,
-                    symbolColor: symbolColor,
-                    height: 30
-                }});
+            }} else if (!modal) {{
+                if (modalOpen) {{
+                    modalOpen = false;
+                }}
+                enforceTitleBarColor();
             }}
         }} catch (e) {{
             console.error('TitleBarOverlay update error:', e);
@@ -359,6 +395,37 @@ def main():
     with open(current_css_path, "w", encoding="utf-8") as f:
         f.write("/* current.css is dynamically managed by current.js. Keep empty to prevent cascade conflicts. */\n")
     print(f"✅ Cleaned {current_css_path}")
+
+    # 自动分发到 Windows 运行时与持久化母库目录及 WSL 镜像备份
+    import shutil
+    target_dirs = [
+        "/mnt/c/Users/MCRYII/AppData/Local/Programs/Antigravity/resources/custom-theme",
+        "/mnt/c/Users/MCRYII/AppData/Roaming/Antigravity/custom-theme",
+        os.path.expanduser("~/.antigravity-custom-theme-backup")
+    ]
+    sync_files = [
+        "gemini-light.css",
+        "sky-light.css",
+        "cyan-light.css",
+        "orange-light.css",
+        "red-light.css",
+        "stock.css",
+        "build_themes.py",
+        "指南.md",
+        "README.md"
+    ]
+    for tdir in target_dirs:
+        if os.path.exists(tdir):
+            try:
+                shutil.copy2(current_js_path, os.path.join(tdir, "current.js"))
+                shutil.copy2(current_css_path, os.path.join(tdir, "current.css"))
+                for fname in sync_files:
+                    src = os.path.join(BASE_DIR, fname)
+                    if os.path.exists(src):
+                        shutil.copy2(src, os.path.join(tdir, fname))
+                print(f"🚀 Synced to target directory: {tdir}")
+            except Exception as e:
+                print(f"⚠️ Failed to sync to {tdir}: {e}")
 
 if __name__ == "__main__":
     main()
