@@ -4,11 +4,29 @@
    2. 控制栏重构为顶部居中悬浮毛玻璃胶囊坞：与底部原生图片缩放条 1:1 双胶囊对称呼应。
    3. 修复底部缩放条百分比文字颜色，高对比度加粗清晰可见。
    4. 用户消息内部操作浮条彻底摒弃小胶囊，还原为官方原味自然平滑渐隐遮罩。 */
-:root {
-  --media-capsule-bg: rgba(38, 38, 42, 0.90);
+/* 看图胶囊配色兜底（不加 !important，确保各主题自带的 --media-capsule-* 永远优先，
+   实际只在「官方原版」下生效）：浅色模式 = 浅灰毛玻璃胶囊（告别原生死黑药丸）；
+   深色模式 = 半透浅色胶囊贴近原生观感。图标/文字统一走 --media-capsule-fg，
+   未定义时回落到 var(--foreground)，5 套自定义主题的图标配色不受任何影响。 */
+body.theme-light,
+body:not(.dark):not(.theme-dark):not(.dark-theme) {
+  --media-capsule-bg: rgba(240, 240, 242, 0.92);
+  --media-capsule-border: rgba(0, 0, 0, 0.10);
+  --media-capsule-hover: rgba(0, 0, 0, 0.06);
+  --media-capsule-fg: #374151;
+  --media-capsule-shadow: 0 6px 20px rgba(0, 0, 0, 0.10);
+}
+body.theme-dark,
+body.dark,
+body.dark-theme {
+  --media-capsule-bg: rgba(255, 255, 255, 0.16);
   --media-capsule-border: rgba(255, 255, 255, 0.18);
   --media-capsule-hover: rgba(255, 255, 255, 0.15);
+  --media-capsule-fg: #F8FAFC;
+  --media-capsule-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
 }
+/* 看图模态底色由各主题 CSS 自带的 --media-modal-bg 决定；
+   官方原版不在此设色，避免污染任何主题（原版同色由 current.js 单独处理）。 */
 [data-testid="media-modal"] {
   top: 0 !important;
 }
@@ -36,17 +54,17 @@
   box-sizing: border-box !important;
   gap: 6px !important;
   padding: 0 10px !important;
-  background: var(--media-capsule-bg, rgba(38, 38, 42, 0.90)) !important;
+  background: var(--media-capsule-bg, rgba(255, 255, 255, 0.16)) !important;
   backdrop-filter: blur(20px) !important;
   -webkit-backdrop-filter: blur(20px) !important;
   border: 1px solid var(--media-capsule-border, rgba(255, 255, 255, 0.18)) !important;
   border-radius: 9999px !important;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18) !important;
+  box-shadow: var(--media-capsule-shadow, 0 6px 20px rgba(0, 0, 0, 0.18)) !important;
 }
 [data-testid="media-modal-header"] button {
   background: transparent !important;
   background-color: transparent !important;
-  color: var(--foreground, #F8FAFC) !important;
+  color: var(--media-capsule-fg, var(--foreground, #F8FAFC)) !important;
   width: 28px !important;
   height: 28px !important;
   border-radius: 9999px !important;
@@ -70,34 +88,36 @@
   width: 16px !important;
   height: 16px !important;
   fill: currentColor !important;
-  color: var(--foreground, #F8FAFC) !important;
+  color: var(--media-capsule-fg, var(--foreground, #F8FAFC)) !important;
 }
-/* 底部缩放条双胶囊 1:1 视觉对齐 */
+/* 底部缩放条双胶囊 1:1 视觉对齐（color 兜底命中「50%」这类裸文本节点，靠继承上色） */
 [data-testid="media-modal"] div[class*="bottom-"]:has(button),
+[data-testid="media-modal-zoom-controls"],
 [data-testid="media-modal"] div:not([data-testid="media-modal-header"]):has(> button):has(span) {
   height: 40px !important;
   box-sizing: border-box !important;
-  background: var(--media-capsule-bg, rgba(38, 38, 42, 0.90)) !important;
+  background: var(--media-capsule-bg, rgba(255, 255, 255, 0.16)) !important;
   backdrop-filter: blur(20px) !important;
   -webkit-backdrop-filter: blur(20px) !important;
   border: 1px solid var(--media-capsule-border, rgba(255, 255, 255, 0.18)) !important;
   border-radius: 9999px !important;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18) !important;
+  box-shadow: var(--media-capsule-shadow, 0 6px 20px rgba(0, 0, 0, 0.18)) !important;
   align-items: center !important;
+  color: var(--media-capsule-fg, var(--foreground, #F8FAFC)) !important;
 }
 /* 彻底修复底部缩放百分比清晰度 */
 [data-testid="media-modal"] div[class*="bottom-"] span,
 [data-testid="media-modal"] div[class*="bottom-"] p,
 [data-testid="media-modal"] div:not([data-testid="media-modal-header"]):has(button) span,
 [data-testid="media-modal"] div:not([data-testid="media-modal-header"]):has(button) p {
-  color: var(--foreground, #1B2A4A) !important;
+  color: var(--media-capsule-fg, var(--foreground, #1B2A4A)) !important;
   font-weight: 600 !important;
   opacity: 1 !important;
 }
 /* 底部缩放条按钮与图标 */
 [data-testid="media-modal"] div[class*="bottom-"] button,
 [data-testid="media-modal"] div:not([data-testid="media-modal-header"]) button {
-  color: var(--foreground, #F8FAFC) !important;
+  color: var(--media-capsule-fg, var(--foreground, #F8FAFC)) !important;
 }
 [data-testid="media-modal"] div[class*="bottom-"] button:hover,
 [data-testid="media-modal"] div:not([data-testid="media-modal-header"]) button:hover {

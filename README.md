@@ -33,7 +33,7 @@
 ├── cyan-light.css     # 碧水青波浅色主题源文件
 ├── orange-light.css   # 落霞暖橙浅色主题源文件
 ├── red-light.css      # 丹霞绯红浅色主题源文件
-├── current.css        # 纯占位（0 规则）；看图胶囊皮肤已下沉到各主题 CSS 第 16 节
+├── current.css        # 看图双胶囊通用结构 + 官方原版浅灰胶囊配色兜底（不带 !important）
 ├── current.js         # 主题辅助注入脚本（含下拉换肤选择器、标题栏配色与看图模态系统按钮区同色贴合）
 ├── build_themes.py    # 主题打包编译与自动多端分发脚本
 ├── stock.css          # 原版备用空样式表
@@ -54,7 +54,7 @@ Antigravity 在 Windows 下的主题存放路径为：
 *(完整路径示例：`C:\Users\<你的用户名>\AppData\Local\Programs\Antigravity\resources\custom-theme\`)*
 
 ### 2. 启用主题
-主题样式由 `current.js` 动态注入（含看图模态的顶部/底部胶囊皮肤，来自各主题 CSS 第 16 节），`current.css` 只是纯占位（0 规则）。**请勿用主题文件覆盖 `current.css`**。
+主题样式由 `current.js` 动态注入（含看图模态的顶部/底部胶囊皮肤，来自各主题 CSS 第 16 节），`current.css` 只承载看图双胶囊的通用结构与「官方原版」浅灰胶囊配色兜底（不带 `!important`，主题变量永远优先）。**请勿用主题文件覆盖 `current.css`**。
 
 日常换肤直接用界面右上角的下拉菜单即可，无需改动任何文件。
 
@@ -63,7 +63,7 @@ Antigravity 在 Windows 下的主题存放路径为：
 - **四色极光**：`return localStorage.getItem('antigravity_selected_theme') || 'gemini';`
 - **蔚蓝晴空**：把上面的 `'gemini'` 改为 `'sky'`（其余主题同理：`cyan` / `orange` / `red` / `stock`）。
 
-> ⚠️ 不要用主题文件覆盖 `current.css`：它必须保持为空占位，否则「官方原版」下看图会被外部样式染色（原版看图应 100% 保持 app 原生外观）。
+> ⚠️ 不要用主题文件覆盖 `current.css`：胶囊兜底配色依赖「不带 `!important`、主题变量永远优先」的层级设计，混入主题级规则会破坏该层级（官方原版浅色下看图双胶囊为浅灰毛玻璃、看图模态为浅灰实底，深色为半透浅色胶囊 + 近黑实底模态）。
 
 ### 3. 即刻生效
 回到 Antigravity 窗口，按下快捷键：

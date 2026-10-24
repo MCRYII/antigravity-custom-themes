@@ -32,6 +32,22 @@ def main():
         "stock": '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="ag-svg-stock" x1="2" y1="2" x2="14" y2="14" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#3B82F6"/><stop offset="100%" stop-color="#64748B"/></linearGradient></defs><path d="M13.5 6.5C13 4.2 11 2.5 8.5 2.5C5.5 2.5 3 4.8 2.6 7.8M13.5 3V6.5H10" stroke="url(#ag-svg-stock)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.5 9.5C3 11.8 5 13.5 7.5 13.5C10.5 13.5 13 11.2 13.4 8.2M2.5 13V9.5H6" stroke="url(#ag-svg-stock)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
     }
 
+    # 官方原版专属注入样式：看图模态实底化（对标自定义主题的 --media-modal-bg 机制）。
+    # 原版模态原生是半透明遮罩，applyModalChrome() 合成标题栏色时与实际渲染结果存在色差，
+    # 右上角 Windows 系统按钮区会露出一块突兀色块；改为实底后标题栏直接读到模态真实底色，
+    # 系统按钮区与遮罩 0 色差、彻底融入背景。浅色 = 中性浅灰，深色 = 近黑，随 body 深浅色类切换。
+    STOCK_CSS = """/* === 官方原版：看图模态实底化（右上角系统按钮区同色贴合的取色来源） === */
+body.theme-light [data-testid="media-modal"],
+body:not(.dark):not(.theme-dark):not(.dark-theme) [data-testid="media-modal"] {
+  background-color: #E4E4E7 !important;
+}
+body.theme-dark [data-testid="media-modal"],
+body.dark [data-testid="media-modal"],
+body.dark-theme [data-testid="media-modal"] {
+  background-color: #18181B !important;
+}
+"""
+
     # 构建主题数据元信息
     themes_data = [
         {
@@ -80,7 +96,7 @@ def main():
             "icon": THEME_ICONS["stock"],
             "titlebarColor": None,
             "symbolColor": None,
-            "css": ""
+            "css": STOCK_CSS
         }
     ]
 
@@ -102,6 +118,8 @@ def main():
     let modalChromeActive = false;
     let modalChromeThemeId = null;
     let preModalOverlay = null;
+    // React 会在模态挂载后再次改写标题栏颜色，必须周期性重新确认，否则会被覆盖回原色
+    let modalChromeTimer = null;
 
     // 检测是否处于深色模式（Antigravity 客户端在 document.body 上切换 dark / dark-theme / theme-dark）
     function isDarkMode() {{
@@ -246,19 +264,44 @@ def main():
 
     // === 看图模态：把 Windows 原生系统按钮区（− □ ×）染成"与看图遮罩完全同一个颜色" ===
     // 取模态元素的实际渲染背景色（来自主题 --media-modal-bg），系统按钮区与遮罩 0 色差。
-    // 官方原版（stock）在此直接退避：0 调用，完全呈现 app 原生外观。
-    function applyModalChrome() {{
+    // 官方原版（stock）下同样执行：不读主题变量，直接读遮罩实际渲染底色，
+    // 让右上角系统按钮区与遮罩完全同色、彻底融入背景，不再突兀。
+    function applyModalChrome(force) {{
         const activeId = getActiveThemeId();
-        if (activeId === 'stock') return;
 
         const modalEl = document.querySelector('[data-testid="media-modal"], [data-testid="mermaid-lightbox-viewport"]');
         if (!modalEl) return;
 
         // 已贴合且主题未变：不再重复读取样式（避免流式输出时高频 getComputedStyle）
-        if (modalChromeActive && modalChromeThemeId === activeId) return;
+        if (modalChromeActive && modalChromeThemeId === activeId && !force) return;
 
-        const bg = parseCssColor(getComputedStyle(modalEl).backgroundColor);
-        if (!bg) return;
+        // 优先读模态自身实色底（自定义主题都有 --media-modal-bg 实色）；
+        // 官方原版模态是透明的，此时必须把页面底色与全屏半透明遮罩合成，否则按钮区会停留在浅色上、浮在暗色遮罩之上。
+        let bg = parseCssColor(getComputedStyle(modalEl).backgroundColor);
+        if (!bg || bg[3] < 0.05) {{
+            const base = parseCssColor(getComputedStyle(document.body).backgroundColor)
+                      || parseCssColor(getComputedStyle(document.documentElement).backgroundColor);
+            if (!base) return;
+            let r = base[0], g = base[1], b = base[2];
+            const layers = [];
+            document.querySelectorAll('div').forEach((el) => {{
+                const cs = getComputedStyle(el);
+                if (cs.position !== 'fixed' && cs.position !== 'absolute') return;
+                const rect = el.getBoundingClientRect();
+                if (rect.width < innerWidth * 0.9 || rect.height < innerHeight * 0.9) return;
+                const c = parseCssColor(cs.backgroundColor);
+                if (!c || c[3] <= 0.01) return;
+                layers.push({{ z: parseInt(cs.zIndex, 10) || 0, c }});
+            }});
+            layers.sort((m, n) => m.z - n.z);
+            for (const {{ c }} of layers) {{
+                const a = c[3];
+                r = c[0] * a + r * (1 - a);
+                g = c[1] * a + g * (1 - a);
+                b = c[2] * a + b * (1 - a);
+            }}
+            bg = [r, g, b, 1];
+        }}
         const color = toHex(bg[0], bg[1], bg[2]);
 
         if (!modalChromeActive) {{
@@ -276,23 +319,43 @@ def main():
         if (!modalChromeActive) return;
         modalChromeActive = false;
         modalChromeThemeId = null;
-        const restore = preModalOverlay;
         preModalOverlay = null;
-        if (restore) {{
-            lastAppliedOverlay = restore;
-            window.electronNative?.setTitleBarOverlay?.(restore);
+
+        // 退出看图后必须 100% 还原成「正常态标题栏色」，
+        // 不能依赖缓存（缓存可能为空，且官方原版分支不会自行重刷，会导致按钮区停留在深色上、必须刷新才恢复）。
+        const activeId = getActiveThemeId();
+        let color, symbolColor;
+        if (activeId === 'stock') {{
+            // 官方原版：复刻官方算法，直接读实时 CSS 变量
+            color = readCssVarHex('--sidebar', isDarkMode() ? '#161616' : '#f2f2f2');
+            symbolColor = readCssVarHex('--foreground', isDarkMode() ? '#cccccc' : '#101010');
         }} else {{
-            // 无历史缓存时按当前主题重新校准
-            lastAppliedOverlay = null;
-            enforceTitleBarColor(true);
+            const theme = getTheme(activeId);
+            color = theme.titlebarColor || '#F3F3F3';
+            symbolColor = theme.symbolColor || '#1B2A4A';
         }}
+        lastAppliedOverlay = {{ color: color, symbolColor: symbolColor, height: 30 }};
+        savedSidebarColor = color;
+        window.electronNative?.setTitleBarOverlay?.(lastAppliedOverlay);
     }}
 
     // 监听看图/流程图模态的挂载与卸载
     function syncModalChrome() {{
         const modal = document.querySelector('[data-testid="media-modal"], [data-testid="mermaid-lightbox-viewport"]');
-        if (modal) applyModalChrome();
-        else restoreModalChrome();
+        if (modal) {{
+            applyModalChrome();
+            // React 挂载后会把标题栏改回原色，需在模态存在期间持续重新确认
+            if (!modalChromeTimer) {{
+                modalChromeTimer = setInterval(() => {{
+                    const still = document.querySelector('[data-testid="media-modal"], [data-testid="mermaid-lightbox-viewport"]');
+                    if (still) applyModalChrome(true);
+                    else {{ clearInterval(modalChromeTimer); modalChromeTimer = null; restoreModalChrome(); }}
+                }}, 400);
+            }}
+        }} else {{
+            if (modalChromeTimer) {{ clearInterval(modalChromeTimer); modalChromeTimer = null; }}
+            restoreModalChrome();
+        }}
     }}
 
     // 同步深色与主题状态，按需更新标题栏与选择器风格
