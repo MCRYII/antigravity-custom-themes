@@ -1,1 +1,105 @@
-/* current.css is dynamically managed by current.js. Keep empty to prevent cascade conflicts. */
+/* current.css 由 current.js 动态管理主题样式，此处只保留主题无关的通用避让规则。
+   【看图/图表模态顶部居中悬浮胶囊坞 + 底部缩放百分比高对比度守护】
+   1. 看图模态保持全屏铺满（top: 0 !important），消除顶部割裂空白条。
+   2. 控制栏重构为顶部居中悬浮毛玻璃胶囊坞：与底部原生图片缩放条 1:1 双胶囊对称呼应。
+   3. 修复底部缩放条百分比文字颜色，高对比度加粗清晰可见。
+   4. 用户消息内部操作浮条彻底摒弃小胶囊，还原为官方原味自然平滑渐隐遮罩。 */
+:root {
+  --media-capsule-bg: rgba(38, 38, 42, 0.90);
+  --media-capsule-border: rgba(255, 255, 255, 0.18);
+  --media-capsule-hover: rgba(255, 255, 255, 0.15);
+}
+[data-testid="media-modal"] {
+  top: 0 !important;
+}
+[data-testid="media-modal-header"] {
+  position: fixed !important;
+  top: 24px !important;
+  bottom: auto !important;
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  z-index: 9999 !important;
+  width: auto !important;
+  height: auto !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+[data-testid="media-modal-header"] > div {
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 40px !important;
+  box-sizing: border-box !important;
+  gap: 6px !important;
+  padding: 0 10px !important;
+  background: var(--media-capsule-bg, rgba(38, 38, 42, 0.90)) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid var(--media-capsule-border, rgba(255, 255, 255, 0.18)) !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18) !important;
+}
+[data-testid="media-modal-header"] button {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: var(--foreground, #F8FAFC) !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 9999px !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  padding: 0 !important;
+}
+[data-testid="media-modal-header"] button:hover {
+  background: var(--media-capsule-hover, rgba(255, 255, 255, 0.15)) !important;
+  transform: scale(1.08) !important;
+}
+[data-testid="media-modal-header"] button:active {
+  transform: scale(0.95) !important;
+}
+[data-testid="media-modal-header"] button svg {
+  width: 16px !important;
+  height: 16px !important;
+  fill: currentColor !important;
+  color: var(--foreground, #F8FAFC) !important;
+}
+/* 底部缩放条双胶囊 1:1 视觉对齐 */
+[data-testid="media-modal"] div[class*="bottom-"]:has(button),
+[data-testid="media-modal"] div:not([data-testid="media-modal-header"]):has(> button):has(span) {
+  height: 40px !important;
+  box-sizing: border-box !important;
+  background: var(--media-capsule-bg, rgba(38, 38, 42, 0.90)) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid var(--media-capsule-border, rgba(255, 255, 255, 0.18)) !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18) !important;
+  align-items: center !important;
+}
+/* 彻底修复底部缩放百分比清晰度 */
+[data-testid="media-modal"] div[class*="bottom-"] span,
+[data-testid="media-modal"] div[class*="bottom-"] p,
+[data-testid="media-modal"] div:not([data-testid="media-modal-header"]):has(button) span,
+[data-testid="media-modal"] div:not([data-testid="media-modal-header"]):has(button) p {
+  color: var(--foreground, #1B2A4A) !important;
+  font-weight: 600 !important;
+  opacity: 1 !important;
+}
+/* 底部缩放条按钮与图标 */
+[data-testid="media-modal"] div[class*="bottom-"] button,
+[data-testid="media-modal"] div:not([data-testid="media-modal-header"]) button {
+  color: var(--foreground, #F8FAFC) !important;
+}
+[data-testid="media-modal"] div[class*="bottom-"] button:hover,
+[data-testid="media-modal"] div:not([data-testid="media-modal-header"]) button:hover {
+  background: var(--media-capsule-hover, rgba(255, 255, 255, 0.15)) !important;
+}

@@ -33,8 +33,8 @@
 ├── cyan-light.css     # 碧水青波浅色主题源文件
 ├── orange-light.css   # 落霞暖橙浅色主题源文件
 ├── red-light.css      # 丹霞绯红浅色主题源文件
-├── current.css        # Antigravity 静态样式文件（由 current.js 统一管理）
-├── current.js         # 主题辅助注入脚本（含下拉换肤选择器与大图/图表纯透明穿透）
+├── current.css        # 纯占位（0 规则）；看图胶囊皮肤已下沉到各主题 CSS 第 16 节
+├── current.js         # 主题辅助注入脚本（含下拉换肤选择器、标题栏配色与看图模态系统按钮区同色贴合）
 ├── build_themes.py    # 主题打包编译与自动多端分发脚本
 ├── stock.css          # 原版备用空样式表
 ├── 指南.md            # 完整架构、选择器索引与深度维护指南
@@ -54,12 +54,16 @@ Antigravity 在 Windows 下的主题存放路径为：
 *(完整路径示例：`C:\Users\<你的用户名>\AppData\Local\Programs\Antigravity\resources\custom-theme\`)*
 
 ### 2. 启用主题
-将你喜欢的主题文件内容复制覆盖到 `current.css` 即可：
+主题样式由 `current.js` 动态注入（含看图模态的顶部/底部胶囊皮肤，来自各主题 CSS 第 16 节），`current.css` 只是纯占位（0 规则）。**请勿用主题文件覆盖 `current.css`**。
 
-- **若使用 Gemini 四色浅色款**：
-  将 `gemini-light.css` 复制并重命名替换为 `current.css`。
-- **若使用 天青浅色款**：
-  将 `sky-light.css` 复制并重命名替换为 `current.css`。
+日常换肤直接用界面右上角的下拉菜单即可，无需改动任何文件。
+
+如需直接以指定主题作为默认主题，修改 `current.js` 顶部注册表中 `getActiveThemeId()` 的默认返回值即可：
+
+- **四色极光**：`return localStorage.getItem('antigravity_selected_theme') || 'gemini';`
+- **蔚蓝晴空**：把上面的 `'gemini'` 改为 `'sky'`（其余主题同理：`cyan` / `orange` / `red` / `stock`）。
+
+> ⚠️ 不要用主题文件覆盖 `current.css`：它必须保持为空占位，否则「官方原版」下看图会被外部样式染色（原版看图应 100% 保持 app 原生外观）。
 
 ### 3. 即刻生效
 回到 Antigravity 窗口，按下快捷键：

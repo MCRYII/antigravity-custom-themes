@@ -62,6 +62,9 @@ body:not(.theme-light) {
   --primary-foreground:         #ffffff !important;
   --placeholder:                #6a9ab8 !important;
   --media-modal-bg:             #DFDDE3 !important;
+  --media-capsule-bg:           rgba(255, 255, 255, 0.90) !important;
+  --media-capsule-border:       rgba(66, 133, 244, 0.35) !important;
+  --media-capsule-hover:        rgba(66, 133, 244, 0.15) !important;
 
   --color-background:           transparent !important;
   --color-foreground:           #1B2A4A !important;
@@ -555,46 +558,60 @@ div[class*="md-sticky-message-bleed"]::after {
   filter: none !important;
 }
 
-/* 用户消息内部右下角操作浮条（时间与重试/复制按钮）：保持原生圆角胶囊与无边框贴合 */
-[data-testid="user-input-step"] [class*="user-input-buttons-container"],
-[data-testid="user-input-step"] .user-input-buttons-container {
+/* 用户消息内部右下角操作浮条（时间与重试/复制按钮）：
+   还原官方原版机制 —— 元素本身保持原生 rounded-full + p-1 几何，不做任何改形；
+   原版靠 .user-input-buttons-shadow 的 box-shadow: 0 0 25px 15px var(--card) 产生柔和渐隐。
+   本主题把 --card 置为 transparent 导致阴影消失，故此处直接用气泡底色重新给阴影上色。 */
+[data-testid="user-input-step"] [class*="user-input-buttons-container"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
   border: none !important;
+  box-shadow: 0 0 25px 15px #ffffff !important;
+  padding: 4px !important;
   border-radius: 9999px !important;
-  box-shadow: none !important;
   z-index: 2 !important;
+}
+
+[data-testid="user-input-step"] [class*="user-input-buttons-container"] button {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 /* === 11. 下拉菜单 / 弹窗 / 工具提示 / 悬浮卡片 / 划词浮条 === */
 
 /* 11.1 全量轻量浮窗实底守护：Base UI 悬浮卡片(HoverCard)、Tooltip、划词选中文本浮条、Popover、Toast 等 */
-[data-base-ui-portal] [data-base-ui-focusable]:not([data-closed]):not([data-ending-style]),
-[data-base-ui-portal] [class*="bg-card"]:not([data-closed]):not([data-ending-style]),
-[data-base-ui-portal] div[role="presentation"]:not([data-closed]) > div,
-[data-base-ui-portal]:not(:has([data-closed])) > div > div,
-div[class*="animate-slideIn"][class*="bg-card"],
-div[class*="w-72"][class*="bg-card"],
-[role="tooltip"]:not([data-closed]),
-.compact-tooltip,
-[data-radix-tooltip-content],
-[data-radix-hover-card-content],
-[data-radix-popover-content],
-[data-radix-popper-content-wrapper] [data-radix-hover-card-content],
-[data-radix-popper-content-wrapper] [data-radix-popover-content],
-[data-radix-popper-content-wrapper] [data-side],
-[data-floating-ui-portal] > div,
-[data-sonner-toast],
-[data-radix-toast-root],
-div[class*="bubble-menu"],
-div[class*="floating-menu"],
-div[class*="floating-toolbar"],
-div[class*="selection-toolbar"],
-div.selection-quote-popup > div,
-div[class*="selection-popup"] > div,
-div:has(> [data-testid="selection-quote-button"]),
-div[role="toolbar"],
-div[class*="rounded"]:has(> button[data-tooltip-id*="quote"]),
-div[class*="rounded"]:has(> button[data-tooltip-id*="explain"]),
-div:has(> [data-testid="conversation-preview"]) {
+[data-base-ui-portal] [data-base-ui-focusable]:not([data-closed]):not([data-ending-style]):not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+[data-base-ui-portal] [class*="bg-card"]:not([data-closed]):not([data-ending-style]):not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+[data-base-ui-portal] div[role="presentation"]:not([data-closed]) > div:not([data-testid="media-modal-zoom-controls"]):not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+[data-base-ui-portal]:not(:has([data-closed])) > div > div:not([data-testid="media-modal-zoom-controls"]):not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+div[class*="animate-slideIn"][class*="bg-card"]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+div[class*="w-72"][class*="bg-card"]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+[role="tooltip"]:not([data-closed]):not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+.compact-tooltip:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+[data-radix-tooltip-content]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+[data-radix-hover-card-content]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+[data-radix-popover-content]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+[data-radix-popper-content-wrapper] [data-radix-hover-card-content]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+[data-radix-popper-content-wrapper] [data-radix-popover-content]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+[data-radix-popper-content-wrapper] [data-side]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+[data-floating-ui-portal] > div:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+[data-sonner-toast]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+[data-radix-toast-root]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+div[class*="bubble-menu"]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+div[class*="floating-menu"]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+div[class*="floating-toolbar"]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+div[class*="selection-toolbar"]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+div.selection-quote-popup > div:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+div[class*="selection-popup"] > div:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+div:has(> [data-testid="selection-quote-button"]):not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+div[role="toolbar"]:not([data-testid="user-input-step"] *):not([data-testid="media-modal-zoom-controls"]):not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+div[class*="rounded"]:has(> button[data-tooltip-id*="quote"]):not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+div[class*="rounded"]:has(> button[data-tooltip-id*="explain"]):not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+div:has(> [data-testid="conversation-preview"]):not([data-testid="media-modal"]):not([data-testid="media-modal"] *)
+{
   background-color: #FAF8FF !important;
   background-image: none !important;
   color: #1B2A4A !important;
@@ -652,7 +669,7 @@ div[class*="selection-popup"] button:hover {
 div[class*="bubble-menu"] [class*="bg-border"],
 div[class*="floating-"] [class*="bg-border"],
 div[class*="selection-popup"] [class*="bg-border"],
-div[role="toolbar"] [class*="bg-border"],
+div[role="toolbar"]:not([data-testid="user-input-step"] *):not([data-testid="media-modal-zoom-controls"]) [class*="bg-border"],
 [data-base-ui-portal] [class*="bg-border"],
 [data-radix-hover-card-content] [class*="bg-border"] {
   background-color: rgba(186, 197, 240, 0.75) !important;
@@ -665,14 +682,14 @@ div[role="toolbar"] [class*="bg-border"],
 div[class*="bubble-menu"] svg,
 div[class*="floating-"] svg,
 div[class*="selection-popup"] svg,
-div[role="toolbar"] svg {
+div[role="toolbar"]:not([data-testid="user-input-step"] *):not([data-testid="media-modal-zoom-controls"]) svg {
   color: #394E7D !important;
 }
 
 /* 划词工具栏与浮动条按钮 hover */
 div[class*="bubble-menu"] button:hover,
 div[class*="floating-"] button:hover,
-div[role="toolbar"] button:hover,
+div[role="toolbar"]:not([data-testid="user-input-step"] *):not([data-testid="media-modal-zoom-controls"]) button:hover,
 div[class*="rounded"]:has(> button[data-tooltip-id*="quote"]) button:hover {
   background-color: rgba(110, 140, 230, 0.16) !important;
   border-radius: 6px !important;
@@ -689,19 +706,20 @@ div[class*="rounded"]:has(> button[data-tooltip-id*="quote"]) button:hover {
 }
 
 /* 11.2 下拉菜单、二级子菜单与弹窗（坚决保证实底，包括嵌套子菜单） */
-[role="menu"],
-[role="listbox"],
-[role="dialog"],
-div[role="menu"],
-[data-base-ui-portal] [role="menu"],
-[data-base-ui-portal] [role="menu"] [role="menu"],
-[cmdk-root],
-[cmdk-list],
-[data-radix-menu-content],
-[data-radix-dropdown-menu-content],
-[data-radix-context-menu-content],
-[data-radix-select-content],
-[data-radix-popper-content-wrapper] > div {
+[role="menu"]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+[role="listbox"]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+[role="dialog"]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+div[role="menu"]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+[data-base-ui-portal] [role="menu"]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+[data-base-ui-portal] [role="menu"] [role="menu"]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+[cmdk-root]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+[cmdk-list]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+[data-radix-menu-content]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+[data-radix-dropdown-menu-content]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+[data-radix-context-menu-content]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+[data-radix-select-content]:not([data-testid="media-modal"]):not([data-testid="media-modal"] *),
+[data-radix-popper-content-wrapper] > div:not([data-testid="media-modal"]):not([data-testid="media-modal"] *)
+{
   background-color: #FAF8FF !important;
   color: #1B2A4A !important;
   border: 1px solid rgba(186, 197, 240, 0.75) !important;
@@ -1039,76 +1057,121 @@ button[data-testid="aux-pane-new-tab-button"]:hover {
   border-radius: 6px !important;
 }
 
-/* === 16. 图片与图表查看模态（Media Modal / Mermaid Lightbox）：安全顶边距避让与纯净看图 === */
+/* === 16. 图片与图表查看模态（Media Modal / Mermaid Lightbox）：顶部居中悬浮胶囊坞 + 底部缩放胶囊 ===
+   要点：胶囊坞用 absolute 定位（包含块 = 全屏 media-modal），绝不使用 fixed，
+   避免祖先 transform / filter 造成包含块漂移、胶囊被裁到视口外而"消失"。 */
 [data-testid="media-modal"] {
   background-color: var(--media-modal-bg, #DFDDE3) !important;
 }
 
 [data-testid="media-modal-header"] {
-  position: relative !important;
-  top: 0 !important;
+  position: absolute !important;
+  top: 18px !important;
+  left: 0 !important;
   right: 0 !important;
-  height: 72px !important;
-  padding-top: 32px !important;
-  padding-bottom: 0 !important;
-  padding-left: 16px !important;
-  padding-right: 24px !important;
+  bottom: auto !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
   display: flex !important;
   align-items: center !important;
-  justify-content: flex-end !important;
-  z-index: 50 !important;
+  justify-content: center !important;
   background: transparent !important;
   background-color: transparent !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
   border: none !important;
   box-shadow: none !important;
+  transform: none !important;
+  z-index: 100 !important;
+  pointer-events: none !important;
 }
 
+/* 胶囊本体：浅色毛玻璃，图标走主题前景色（不再是死黑药丸） */
 [data-testid="media-modal-header"] > div {
-  background: transparent !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  border: none !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-  display: flex !important;
+  pointer-events: auto !important;
+  display: inline-flex !important;
   align-items: center !important;
-  gap: 10px !important;
+  height: 40px !important;
+  box-sizing: border-box !important;
+  gap: 4px !important;
+  padding: 0 8px !important;
+  background: var(--media-capsule-bg, rgba(255, 255, 255, 0.90)) !important;
+  backdrop-filter: blur(20px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(120%) !important;
+  border: 1px solid var(--media-capsule-border, rgba(0, 0, 0, 0.08)) !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
 }
 
-/* 看图操作按钮：彻底摒弃黑药丸与黑底圆圈，回归官方原味纯净幽灵按钮 */
 [data-testid="media-modal-header"] button {
   background: transparent !important;
   background-color: transparent !important;
   color: var(--foreground, #1B2A4A) !important;
-  width: 36px !important;
-  height: 36px !important;
-  border-radius: 9999px !important;
+  width: 30px !important;
+  height: 30px !important;
+  padding: 0 !important;
   border: none !important;
+  border-radius: 9999px !important;
   box-shadow: none !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   cursor: pointer !important;
-  transition: background-color 0.15s ease, transform 0.15s ease !important;
+  transition: background-color 0.15s ease !important;
 }
 
 [data-testid="media-modal-header"] button:hover {
-  background-color: rgba(0, 0, 0, 0.08) !important;
-  color: var(--foreground, #1B2A4A) !important;
+  background: var(--media-capsule-hover, rgba(0, 0, 0, 0.06)) !important;
 }
 
 [data-testid="media-modal-header"] button:active {
-  background-color: rgba(0, 0, 0, 0.14) !important;
-  transform: scale(0.96) !important;
+  background: var(--media-capsule-hover, rgba(0, 0, 0, 0.10)) !important;
 }
 
 [data-testid="media-modal-header"] button svg {
-  width: 20px !important;
-  height: 20px !important;
-  fill: currentColor !important;
+  width: 18px !important;
+  height: 18px !important;
   color: inherit !important;
+  fill: currentColor !important;
+}
+
+/* 底部缩放胶囊：精确命中 zoom-controls，绝不泛化 :has() 误伤其它浮层 */
+[data-testid="media-modal-zoom-controls"] {
+  height: 40px !important;
+  box-sizing: border-box !important;
+  gap: 2px !important;
+  padding: 0 8px !important;
+  background: var(--media-capsule-bg, rgba(255, 255, 255, 0.90)) !important;
+  backdrop-filter: blur(20px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(120%) !important;
+  border: 1px solid var(--media-capsule-border, rgba(0, 0, 0, 0.08)) !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+}
+
+[data-testid="media-modal-zoom-controls"] button {
+  background: transparent !important;
+  color: var(--foreground, #1B2A4A) !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 9999px !important;
+}
+
+[data-testid="media-modal-zoom-controls"] button:hover {
+  background: var(--media-capsule-hover, rgba(0, 0, 0, 0.06)) !important;
+}
+
+[data-testid="media-modal-zoom-controls"] button svg {
+  color: inherit !important;
+  fill: currentColor !important;
+}
+
+/* 缩放百分比文字：高对比度、加粗，彻底根除发白不可见 */
+[data-testid="media-modal-zoom-reset"] {
+  color: var(--foreground, #1B2A4A) !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  opacity: 1 !important;
 }
 
 /* === 17. 页面吸顶标头与搜索区（Conversation History、Customizations 等）：视口固定渐变实底遮罩 ===
@@ -1146,7 +1209,8 @@ div:has(> input[data-testid="customizations-search"]):focus-within {
 }
 
 /* 历史记录页废弃提示条（This page is going away soon）：柔白实底微卡，不透底 */
-div[class*="sticky"][class*="top-0"] div[class*="bg-card"]:has(svg) {
+/* 排除用户消息气泡内的操作浮条（同样是 bg-card + svg，但绝不能被当成提示条套白框） */
+div[class*="sticky"][class*="top-0"] div[class*="bg-card"]:has(svg):not([class*="user-input-buttons-container"]) {
   background-color: rgba(255, 255, 255, 0.88) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
