@@ -571,4 +571,38 @@
     });
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    // documentElement 级 childList 兜底：客户端从托盘重开时 React 会整体重建 DOM，
+    // body 节点被替换会让上面的 body 订阅失联，这里保证仍能收到变更并重挂选择器
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+
+    // 自愈看门狗：托盘重开等场景下客户端会整体重建 DOM（连 head 一起），主题样式元素
+    // 与切换器被一并移除，且不触发导航/dom-ready，body 级 MutationObserver 也会失联。
+    // 每 1s 校验一次，缺什么补什么（与看图标题栏 400ms 周期重申同一防御思路）。
+    setInterval(() => {
+        try {
+            const theme = getTheme(activeThemeId());
+            let styleEl = document.getElementById('antigravity-active-theme');
+            const missing = !styleEl;
+            if (missing) {
+                styleEl = document.createElement('style');
+                styleEl.id = 'antigravity-active-theme';
+                (document.head || document.documentElement).appendChild(styleEl);
+            }
+            if (styleEl.textContent !== theme.css) {
+                styleEl.textContent = theme.css;
+            }
+            if (missing) {
+                // 样式被整体移除说明发生过 DOM 重建：标题栏贴合与切换器一并恢复
+                if (activeThemeId() !== 'stock') {
+                    enforceTitleBarColor(true);
+                }
+                mountThemeSelector();
+                return;
+            }
+            if (!document.getElementById('antigravity-theme-selector') &&
+                document.querySelector('[data-testid="pane-titlebar-toolbar"]')) {
+                mountThemeSelector();
+            }
+        } catch (e) { }
+    }, 1000);
 })();
