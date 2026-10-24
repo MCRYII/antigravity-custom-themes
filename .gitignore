@@ -14,3 +14,13 @@ desktop.ini
 # Temporary & Log Files
 *.log
 *.tmp
+
+# Theme development sources (kept locally, not part of the distributable package)
+指南.md
+build_themes.py
+gemini-light.css
+sky-light.css
+cyan-light.css
+orange-light.css
+red-light.css
+stock.css
