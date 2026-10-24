@@ -110,14 +110,12 @@ body.dark-theme [data-testid="media-modal"] {
 
     const THEMES = {themes_json};
 
-    let savedSidebarColor = null;
     let lastAppliedOverlay = null;
     let lastIsDark = null;
     let lastActiveId = null;
-    // 看图模态：系统窗口按钮区「贴合标题栏」临时色缓存
+    // 看图模态：系统窗口按钮区「贴合标题栏」状态缓存
     let modalChromeActive = false;
     let modalChromeThemeId = null;
-    let preModalOverlay = null;
 
     // 主题记忆：app 原生 nativeStorage IPC（%APPDATA%/Antigravity/app_storage.json，
     // 与缩放级别 zoomLevel 同一存储、按键合并不覆盖其它设置）为主存；
@@ -187,9 +185,9 @@ body.dark-theme [data-testid="media-modal"] {
             if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
             if (h.length === 6) return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16), 1];
         }}
-        m = str.match(/rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?\s*\)/);
+        m = str.match(/rgba?\\(\\s*([\\d.]+)[,\\s]+([\\d.]+)[,\\s]+([\\d.]+)(?:[,\\s/]+([\\d.]+))?\\s*\\)/);
         if (m) return [+m[1], +m[2], +m[3], m[4] === undefined ? 1 : +m[4]];
-        m = str.match(/color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)/);
+        m = str.match(/color\\(srgb\\s+([\\d.]+)\\s+([\\d.]+)\\s+([\\d.]+)/);
         if (m) return [Math.round(+m[1]*255), Math.round(+m[2]*255), Math.round(+m[3]*255), 1];
         return null;
     }}
@@ -215,14 +213,14 @@ body.dark-theme [data-testid="media-modal"] {
             document.body.appendChild(el);
             const computed = getComputedStyle(el).color;
             el.remove();
-            const srgbMatch = computed.match(/color\\(srgb\\\\s+([\\\\d.]+)\\\\s+([\\\\d.]+)\\\\s+([\\\\d.]+)/);
+            const srgbMatch = computed.match(/color\\(srgb\\s+([\\d.]+)\\s+([\\d.]+)\\s+([\\d.]+)/);
             if (srgbMatch) {{
                 const r = Math.round(parseFloat(srgbMatch[1]) * 255);
                 const g = Math.round(parseFloat(srgbMatch[2]) * 255);
                 const b = Math.round(parseFloat(srgbMatch[3]) * 255);
                 return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
             }}
-            const rgbMatch = computed.match(/rgba?\\(([\\\\d]+),\\\\s*([\\\\d]+),\\\\s*([\\\\d]+)/);
+            const rgbMatch = computed.match(/rgba?\\(([\\d]+),\\s*([\\d]+),\\s*([\\d]+)/);
             if (rgbMatch) {{
                 const r = parseInt(rgbMatch[1], 10);
                 const g = parseInt(rgbMatch[2], 10);
@@ -292,7 +290,6 @@ body.dark-theme [data-testid="media-modal"] {
         }}
 
         lastAppliedOverlay = {{ color: color, symbolColor: symbolColor, height: 30 }};
-        savedSidebarColor = color;
         window.electronNative?.setTitleBarOverlay?.(lastAppliedOverlay);
     }}
 
@@ -310,12 +307,14 @@ body.dark-theme [data-testid="media-modal"] {
         if (modalChromeActive && modalChromeThemeId === activeId && !force) return;
 
         // 优先读模态自身实色底（自定义主题都有 --media-modal-bg 实色）；
-        // 官方原版模态是透明的，此时必须把页面底色与全屏半透明遮罩合成，否则按钮区会停留在浅色上、浮在暗色遮罩之上。
+        // 官方原版（如图表弹窗）模态透明时，把页面底色与全屏半透明遮罩逐层合成。
+        // 注意 parseCssColor 对 rgba(0,0,0,0) 会返回 [0,0,0,0] 而非 null，
+        // 必须显式校验 alpha，否则透明 body 会被当成黑底合成、颜色整体偏暗。
         let bg = parseCssColor(getComputedStyle(modalEl).backgroundColor);
         if (!bg || bg[3] < 0.05) {{
-            const base = parseCssColor(getComputedStyle(document.body).backgroundColor)
-                      || parseCssColor(getComputedStyle(document.documentElement).backgroundColor);
-            if (!base) return;
+            let base = parseCssColor(getComputedStyle(document.body).backgroundColor);
+            if (!base || base[3] < 0.05) base = parseCssColor(getComputedStyle(document.documentElement).backgroundColor);
+            if (!base || base[3] < 0.05) return;
             let r = base[0], g = base[1], b = base[2];
             const layers = [];
             document.querySelectorAll('div').forEach((el) => {{
@@ -338,10 +337,7 @@ body.dark-theme [data-testid="media-modal"] {
         }}
         const color = toHex(bg[0], bg[1], bg[2]);
 
-        if (!modalChromeActive) {{
-            preModalOverlay = lastAppliedOverlay ? {{ ...lastAppliedOverlay }} : null;
-            modalChromeActive = true;
-        }}
+        modalChromeActive = true;
         modalChromeThemeId = activeId;
 
         const overlay = {{ color: color, symbolColor: contrastColor(color), height: 30 }};
@@ -353,7 +349,6 @@ body.dark-theme [data-testid="media-modal"] {
         if (!modalChromeActive) return;
         modalChromeActive = false;
         modalChromeThemeId = null;
-        preModalOverlay = null;
 
         // 退出看图后必须 100% 还原成「正常态标题栏色」，
         // 不能依赖缓存（缓存可能为空，且官方原版分支不会自行重刷，会导致按钮区停留在深色上、必须刷新才恢复）。
@@ -369,7 +364,6 @@ body.dark-theme [data-testid="media-modal"] {
             symbolColor = theme.symbolColor || '#1B2A4A';
         }}
         lastAppliedOverlay = {{ color: color, symbolColor: symbolColor, height: 30 }};
-        savedSidebarColor = color;
         window.electronNative?.setTitleBarOverlay?.(lastAppliedOverlay);
     }}
 
@@ -392,18 +386,16 @@ body.dark-theme [data-testid="media-modal"] {
         }}
     }}
 
-    // 同步深色与主题状态，按需更新标题栏与选择器风格
+    // 同步深色状态：深浅色切换时重算标题栏（官方原版走实时取色）与切换器配色；
+    // 主题变更本身由 applyTheme 直接驱动（activeThemeId() 恒等于 lastActiveId），无需在此重复比较
     function syncThemeState() {{
         const currentDark = isDarkMode();
-        const currentId = activeThemeId();
-        if (currentDark !== lastIsDark || currentId !== lastActiveId) {{
-            lastIsDark = currentDark;
-            lastActiveId = currentId;
-            if (currentId !== 'stock') {{
-                enforceTitleBarColor(true);
-            }}
-            updateSelectorUI(currentId);
+        if (currentDark === lastIsDark) return;
+        lastIsDark = currentDark;
+        if (activeThemeId() !== 'stock') {{
+            enforceTitleBarColor(true);
         }}
+        updateSelectorUI(activeThemeId());
     }}
 
     // 更新胶囊与下拉项的选中标记及深浅色自适应风格

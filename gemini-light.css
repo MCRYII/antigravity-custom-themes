@@ -32,7 +32,6 @@
 body,
 body.theme-light,
 body:not(.theme-light) {
-  --gem-top:                    #E9F0FE;
   --gem-mesh:
     linear-gradient(180deg, #E9F0FE 0px, #E9F0FE 34px, rgba(233, 240, 254, 0) 96px),
     radial-gradient(circle at 18% 18%, rgba(66, 133, 244, 0.22) 0%, transparent 48%),

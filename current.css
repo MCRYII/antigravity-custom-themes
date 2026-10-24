@@ -1,15 +1,19 @@
 /* current.css 由 current.js 动态管理主题样式，此处只保留主题无关的通用避让规则。
-   【看图/图表模态顶部居中悬浮胶囊坞 + 底部缩放百分比高对比度守护】
+   【看图/图表模态顶部居中悬浮胶囊坞 + 底部缩放胶囊守护】
    1. 看图模态保持全屏铺满（top: 0 !important），消除顶部割裂空白条。
    2. 控制栏重构为顶部居中悬浮毛玻璃胶囊坞：与底部原生图片缩放条 1:1 双胶囊对称呼应。
-   3. 修复底部缩放条百分比文字颜色，高对比度加粗清晰可见。
+      定位统一用 absolute（包含块 = 全屏 media-modal），与主题第 16 节同一套结构，
+      规避祖先 transform/filter 造成 fixed 包含块漂移、胶囊被裁出视口的「胶囊消失」问题。
+   3. 缩放条只用精确 data-testid 选择器（zoom-controls / zoom-reset），
+      严禁 div:has(button):has(span) 泛化写法（会误伤其它浮层；实测「50%」是裸文本节点，
+      旧泛化 span 规则从未命中，现已删除，靠容器级 color 继承上色）。
    4. 用户消息内部操作浮条彻底摒弃小胶囊，还原为官方原味自然平滑渐隐遮罩。 */
 /* 看图胶囊配色兜底（不加 !important，确保各主题自带的 --media-capsule-* 永远优先，
    实际只在「官方原版」下生效）：浅色模式 = 浅灰毛玻璃胶囊（告别原生死黑药丸）；
    深色模式 = 半透浅色胶囊贴近原生观感。图标/文字统一走 --media-capsule-fg，
    未定义时回落到 var(--foreground)，5 套自定义主题的图标配色不受任何影响。 */
-body.theme-light,
-body:not(.dark):not(.theme-dark):not(.dark-theme) {
+html:not(.dark):not(.theme-dark) body.theme-light,
+html:not(.dark):not(.theme-dark) body:not(.dark):not(.theme-dark):not(.dark-theme) {
   --media-capsule-bg: rgba(240, 240, 242, 0.92);
   --media-capsule-border: rgba(0, 0, 0, 0.10);
   --media-capsule-hover: rgba(0, 0, 0, 0.06);
@@ -26,28 +30,33 @@ body.dark-theme {
   --media-capsule-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
 }
 /* 看图模态底色由各主题 CSS 自带的 --media-modal-bg 决定；
-   官方原版不在此设色，避免污染任何主题（原版同色由 current.js 单独处理）。 */
+   官方原版的实底由 current.js 注入的 stock 专属 CSS 提供（浅 #E4E4E7 / 深 #18181B）。 */
 [data-testid="media-modal"] {
   top: 0 !important;
 }
 [data-testid="media-modal-header"] {
-  position: fixed !important;
-  top: 24px !important;
+  position: absolute !important;
+  top: 18px !important;
+  left: 0 !important;
+  right: 0 !important;
   bottom: auto !important;
-  left: 50% !important;
-  right: auto !important;
-  transform: translateX(-50%) !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  z-index: 9999 !important;
   width: auto !important;
   height: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   background: transparent !important;
   background-color: transparent !important;
   border: none !important;
   box-shadow: none !important;
+  transform: none !important;
+  z-index: 100 !important;
+  pointer-events: none !important;
 }
 [data-testid="media-modal-header"] > div {
+  pointer-events: auto !important;
   display: inline-flex !important;
   align-items: center !important;
   height: 40px !important;
@@ -90,10 +99,8 @@ body.dark-theme {
   fill: currentColor !important;
   color: var(--media-capsule-fg, var(--foreground, #F8FAFC)) !important;
 }
-/* 底部缩放条双胶囊 1:1 视觉对齐（color 兜底命中「50%」这类裸文本节点，靠继承上色） */
-[data-testid="media-modal"] div[class*="bottom-"]:has(button),
-[data-testid="media-modal-zoom-controls"],
-[data-testid="media-modal"] div:not([data-testid="media-modal-header"]):has(> button):has(span) {
+/* 底部缩放胶囊：精确命中 zoom-controls，容器级 color 让「50%」裸文本节点靠继承上色 */
+[data-testid="media-modal-zoom-controls"] {
   height: 40px !important;
   box-sizing: border-box !important;
   background: var(--media-capsule-bg, rgba(255, 255, 255, 0.16)) !important;
@@ -105,21 +112,17 @@ body.dark-theme {
   align-items: center !important;
   color: var(--media-capsule-fg, var(--foreground, #F8FAFC)) !important;
 }
-/* 彻底修复底部缩放百分比清晰度 */
-[data-testid="media-modal"] div[class*="bottom-"] span,
-[data-testid="media-modal"] div[class*="bottom-"] p,
-[data-testid="media-modal"] div:not([data-testid="media-modal-header"]):has(button) span,
-[data-testid="media-modal"] div:not([data-testid="media-modal-header"]):has(button) p {
+/* 缩放百分比：精确命中 zoom-reset（元素存在时强制高对比度；裸文本场景由容器继承兜底） */
+[data-testid="media-modal-zoom-reset"] {
   color: var(--media-capsule-fg, var(--foreground, #1B2A4A)) !important;
   font-weight: 600 !important;
   opacity: 1 !important;
 }
 /* 底部缩放条按钮与图标 */
-[data-testid="media-modal"] div[class*="bottom-"] button,
-[data-testid="media-modal"] div:not([data-testid="media-modal-header"]) button {
+[data-testid="media-modal-zoom-controls"] button {
+  background: transparent !important;
   color: var(--media-capsule-fg, var(--foreground, #F8FAFC)) !important;
 }
-[data-testid="media-modal"] div[class*="bottom-"] button:hover,
-[data-testid="media-modal"] div:not([data-testid="media-modal-header"]) button:hover {
+[data-testid="media-modal-zoom-controls"] button:hover {
   background: var(--media-capsule-hover, rgba(255, 255, 255, 0.15)) !important;
 }
