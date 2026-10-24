@@ -9,7 +9,7 @@ $ErrorActionPreference = 'Stop'
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Marker    = 'custom-theme injection hook'
-$Anchor    = "win.webContents.on('did-finish-load'"
+$Anchor    = "void win.loadURL(url);"
 $Payloads  = @('current.css', 'current.js')
 
 function Die([string]$msg) { Write-Host "[X] $msg" -ForegroundColor Red; exit 1 }
