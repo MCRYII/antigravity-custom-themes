@@ -106,6 +106,31 @@ v1.1 起主题选择通过客户端原生持久化存储记忆，重启自动恢
 
 ---
 
+## 📜 免责声明与安全性说明 (Disclaimer & Security)
+
+> [!NOTE]
+> 本套件由开源社区爱好者独立维护，旨在为 Antigravity 提供更护眼、高质感的视觉体验。
+
+### 1. 软件从属声明 (Non-Affiliation)
+- 本项目（`antigravity-custom-themes`）为**第三方个人开源项目**，与 Google、Google DeepMind 或 Google Antigravity 官方没有任何隶属、关联、授权或背书关系。
+- 文档与界面中提及的“Google”、“Antigravity”、“Gemini”及相关商标与外观权，均归其各自所有者合法拥有。
+
+### 2. 隐私与数据安全 (Privacy & Zero-Telemetry)
+- **100% 纯本地运行**：本套件的所有主题样式（CSS）及配套脚本（JS）均仅在用户本地的 Electron 渲染层执行。
+- **零网络外联**：代码不包含任何遥测（Telemetry）、埋点统计、外部 API 调用或网络外发逻辑。
+- **零凭据接触**：套件绝不读取、拦截、代理或篡改用户的 Google 账号 Token、API 密钥、Cookies 或对话提示词（Prompt）。
+
+### 3. 工作机制与使用须知 (Modding & Updates)
+- 本套件通过在本地客户端的 `app.asar` 中注入只读样式引导钩子实现无刷新换肤。该行为属于客户端本地视觉美化（Client Modding）。
+- 当 Antigravity 客户端执行静默自动更新时，官方安装器会自动全量覆盖并还原 `app.asar`，此属正常机制。更新后若想继续使用，重新运行一次 `install.bat` 即可。
+- 本项目以 MIT 许可证及“现状（AS-IS）”形式提供，作者不对使用过程中因第三方软件更新或环境差异引发的任何直接或间接影响承担法律责任。
+
+### 4. 无损还原保障 (Rollback Guarantee)
+- 首次安装时，脚本已在客户端目录自动生成一份原始无损的 `app.asar.stock-backup` 原厂备份。
+- 若需要彻底移除本套件，可随时双击运行 `uninstall.bat`，系统将毫秒级完整还原原生客户端，不留任何残留。
+
+---
+
 ## ⚙️ 工作原理（简述）
 
 安装脚本在 `app.asar` 内 `dist/utils.js` 的窗口创建流程中注入一个 `dom-ready` 监听（约 20 行，只读不改任何业务代码），客户端每次加载页面时按 `resources/custom-theme` → `%APPDATA%\Antigravity\custom-theme` 顺序加载 `current.css` 与 `current.js`。主题引擎随后注入样式、挂载右上角切换器，并通过 `setTitleBarOverlay` 让原生标题栏与主题底色像素级对齐。主题偏好写入客户端自带的键值存储（`app_storage.json`），与缩放级别等原生设置同库，跨重启可靠恢复。
