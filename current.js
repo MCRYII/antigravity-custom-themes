@@ -14,6 +14,41 @@
     let modalChromeActive = false;
     let modalChromeThemeId = null;
     let preModalOverlay = null;
+
+    // 主题记忆：app 原生 nativeStorage IPC（%APPDATA%/Antigravity/app_storage.json，
+    // 与缩放级别 zoomLevel 同一存储、按键合并不覆盖其它设置）为主存；
+    // localStorage 在该客户端重启后读不回来，仅作会话内快速镜像；启动时以主存为准校准一次。
+    const THEME_PREF_KEY = 'custom-theme-id';
+
+    function saveThemePref(themeId, persistNative) {
+        try {
+            localStorage.setItem('antigravity_selected_theme', themeId);
+        } catch (e) {}
+        if (persistNative === false) return;
+        try {
+            if (window.nativeStorage && typeof window.nativeStorage.updateItems === 'function') {
+                Promise.resolve(window.nativeStorage.updateItems({ [THEME_PREF_KEY]: themeId })).catch(() => {});
+            }
+        } catch (e) {}
+    }
+
+    // 实际生效主题 ID（首次应用完成前回落到持久化读取）
+    function activeThemeId() {
+        return lastActiveId || getActiveThemeId();
+    }
+
+    // 启动校准：以 nativeStorage 主存为准，仅当为合法主题 ID 且与当前已应用主题不同时切换
+    function reconcileThemePref() {
+        try {
+            if (!(window.nativeStorage && typeof window.nativeStorage.getItems === 'function')) return;
+            Promise.resolve(window.nativeStorage.getItems()).then((items) => {
+                const saved = items ? items[THEME_PREF_KEY] : null;
+                if (saved && saved !== lastActiveId && THEMES.some((t) => t.id === saved)) {
+                    applyTheme(saved);
+                }
+            }).catch(() => {});
+        } catch (e) {}
+    }
     // React 会在模态挂载后再次改写标题栏颜色，必须周期性重新确认，否则会被覆盖回原色
     let modalChromeTimer = null;
 
@@ -94,13 +129,12 @@
         return fallback;
     }
 
-    // 动态应用主题样式
-    function applyTheme(themeId) {
+    // 动态应用主题样式（persistNative=false 用于启动首次应用：不回写主存，
+    // 避免把 localStorage 缺失时的回退值覆盖到真实偏好上）
+    function applyTheme(themeId, persistNative) {
         const theme = getTheme(themeId);
         const prevId = lastActiveId;
-        try {
-            localStorage.setItem('antigravity_selected_theme', theme.id);
-        } catch (e) {}
+        saveThemePref(theme.id, persistNative);
 
         let styleEl = document.getElementById('antigravity-active-theme');
         if (!styleEl) {
@@ -126,7 +160,7 @@
 
     // 强制校准原生标题栏覆盖色（防御 React 挂载后重设为纯白，浅色主题坚决防死黑）
     function enforceTitleBarColor(force = false) {
-        const activeId = getActiveThemeId();
+        const activeId = activeThemeId();
         if (activeId === 'stock') {
             // 官方原版：日常运行与刷新完全由官方原生接管，0 干预；
             // 仅在从自定义主题刚切回原版时（force === true），调用一次官方算法重置
@@ -163,7 +197,7 @@
     // 官方原版（stock）下同样执行：不读主题变量，直接读遮罩实际渲染底色，
     // 让右上角系统按钮区与遮罩完全同色、彻底融入背景，不再突兀。
     function applyModalChrome(force) {
-        const activeId = getActiveThemeId();
+        const activeId = activeThemeId();
 
         const modalEl = document.querySelector('[data-testid="media-modal"], [data-testid="mermaid-lightbox-viewport"]');
         if (!modalEl) return;
@@ -219,7 +253,7 @@
 
         // 退出看图后必须 100% 还原成「正常态标题栏色」，
         // 不能依赖缓存（缓存可能为空，且官方原版分支不会自行重刷，会导致按钮区停留在深色上、必须刷新才恢复）。
-        const activeId = getActiveThemeId();
+        const activeId = activeThemeId();
         let color, symbolColor;
         if (activeId === 'stock') {
             // 官方原版：复刻官方算法，直接读实时 CSS 变量
@@ -257,7 +291,7 @@
     // 同步深色与主题状态，按需更新标题栏与选择器风格
     function syncThemeState() {
         const currentDark = isDarkMode();
-        const currentId = getActiveThemeId();
+        const currentId = activeThemeId();
         if (currentDark !== lastIsDark || currentId !== lastActiveId) {
             lastIsDark = currentDark;
             lastActiveId = currentId;
@@ -328,7 +362,7 @@
             existing.remove();
         }
 
-        const currentId = getActiveThemeId();
+        const currentId = activeThemeId();
         const currentTheme = getTheme(currentId);
 
         const container = document.createElement('div');
@@ -376,7 +410,7 @@
         `;
 
         btn.onmouseenter = () => {
-            const isDarkTheme = (getActiveThemeId() === 'stock') && isDarkMode();
+            const isDarkTheme = (activeThemeId() === 'stock') && isDarkMode();
             if (isDarkTheme) {
                 btn.style.background = 'rgba(255, 255, 255, 0.14)';
                 btn.style.borderColor = 'rgba(255, 255, 255, 0.25)';
@@ -388,7 +422,7 @@
             }
         };
         btn.onmouseleave = () => {
-            const isDarkTheme = (getActiveThemeId() === 'stock') && isDarkMode();
+            const isDarkTheme = (activeThemeId() === 'stock') && isDarkMode();
             if (isDarkTheme) {
                 btn.style.background = 'rgba(255, 255, 255, 0.08)';
                 btn.style.borderColor = 'rgba(255, 255, 255, 0.15)';
@@ -454,14 +488,14 @@
             `;
 
             item.onmouseenter = () => {
-                if (item.dataset.themeId !== getActiveThemeId()) {
-                    const isDarkTheme = (getActiveThemeId() === 'stock') && isDarkMode();
+                if (item.dataset.themeId !== activeThemeId()) {
+                    const isDarkTheme = (activeThemeId() === 'stock') && isDarkMode();
                     item.style.background = isDarkTheme ? 'rgba(255, 255, 255, 0.08)' : 'rgba(66, 133, 244, 0.08)';
                 }
             };
             item.onmouseleave = () => {
-                const isNow = item.dataset.themeId === getActiveThemeId();
-                const isDarkTheme = (getActiveThemeId() === 'stock') && isDarkMode();
+                const isNow = item.dataset.themeId === activeThemeId();
+                const isDarkTheme = (activeThemeId() === 'stock') && isDarkMode();
                 item.style.background = isNow
                     ? (isDarkTheme ? 'rgba(66, 133, 244, 0.25)' : 'rgba(66, 133, 244, 0.12)')
                     : 'transparent';
@@ -528,8 +562,10 @@
         }
     }
 
-    // 立即初始化当前主题
-    applyTheme(getActiveThemeId());
+    // 立即初始化当前主题（首次应用不回写主存，避免把 localStorage 缺失时的回退值覆盖到真实偏好上）
+    applyTheme(getActiveThemeId(), false);
+    // 启动校准：以 app 原生持久化存储（nativeStorage）记住的主题为准
+    reconcileThemePref();
 
     // 立即尝试挂载与标题栏初始化
     mountThemeSelector();
