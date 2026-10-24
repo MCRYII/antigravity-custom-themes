@@ -87,6 +87,7 @@ Antigravity 自动更新会清空主题目录并还原 `app.asar`。更新完成
 ├── uninstall.bat     # 一键卸载入口
 ├── current.js        # 主题引擎（内置全部主题样式与切换器，运行时加载）
 ├── current.css       # 主题无关的通用规则（看图胶囊结构等）
+├── LICENSE           # MIT 许可证
 ├── assets/           # 主题预览截图
 └── README.md
 ```
