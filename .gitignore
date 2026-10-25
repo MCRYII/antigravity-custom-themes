@@ -14,9 +14,17 @@ desktop.ini
 # Temporary & Log Files
 *.log
 *.tmp
+*.zip
+__pycache__/
+
+# Private & review materials (kept locally)
+问题.md
+_review/
+assets/*.mp4
 
 # Theme development sources (kept locally, not part of the distributable package)
 指南.md
+docs/
 build_themes.py
 gemini-light.css
 sky-light.css

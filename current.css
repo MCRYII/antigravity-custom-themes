@@ -29,10 +29,28 @@ body.dark-theme {
   --media-capsule-fg: #F8FAFC;
   --media-capsule-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
 }
-/* 看图模态底色由各主题 CSS 自带的 --media-modal-bg 决定；
-   官方原版的实底由 current.js 注入的 stock 专属 CSS 提供（浅 #E4E4E7 / 深 #18181B）。 */
-[data-testid="media-modal"] {
+/* 看图模态与流程图模态全屏铺满固定定位（消除顶部割裂空白条与半透透底） */
+[data-testid="media-modal"],
+div[class*="animate-backdropFadeIn"]:has(~ div [data-testid="mermaid-lightbox-viewport"]),
+div[class*="animate-backdropFadeIn"]:has(~ * [data-testid="mermaid-lightbox-viewport"]) {
+  position: fixed !important;
   top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  inset: 0 !important;
+  z-index: 5000 !important;
+}
+div[class*="animate-modalFadeIn"]:has([data-testid="mermaid-lightbox-viewport"]) {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  inset: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  z-index: 5001 !important;
 }
 [data-testid="media-modal-header"] {
   position: absolute !important;
