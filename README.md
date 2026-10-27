@@ -1,6 +1,6 @@
 # 🌈 Antigravity Custom Themes
 
-为 [Google Antigravity](https://antigravity.google/) 打造的**即装即用浅色主题套件**。下载发行包后双击 `install.bat` 即可完成全部安装，右上角胶囊菜单毫秒级免刷新切换主题，重启自动恢复上次选择。
+为 [Google Antigravity](https://antigravity.google/) 打造的**即装即用浅色主题套件**（目前暂时只支持 Windows）。下载发行包后双击 `install.bat` 即可完成全部安装，右上角胶囊菜单毫秒级免刷新切换主题，重启自动恢复上次选择。
 
 [![下载最新发行版](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20%E4%B8%8B%E8%BD%BD-%E6%9C%80%E6%96%B0%E5%8F%91%E8%A1%8C%E7%89%88-2EA043)](https://github.com/MCRYII/antigravity-custom-themes/releases/latest)
 
