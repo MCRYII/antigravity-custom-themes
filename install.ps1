@@ -16,6 +16,28 @@ function Die([string]$msg) { Write-Host "[X] $msg" -ForegroundColor Red; exit 1 
 function Ok([string]$msg)  { Write-Host "[OK] $msg" -ForegroundColor Green }
 $hex = { param($b) ([System.BitConverter]::ToString($b)).Replace('-', '').ToLower() }
 
+# 只读检测：app.asar 内是否已包含主题注入钩子（结构变化时安全返回 $false，不抛错）
+function Test-AsarPatched([string]$path) {
+    try {
+        if (-not (Test-Path $path)) { return $false }
+        $b = [System.IO.File]::ReadAllBytes($path)
+        if ($b.Length -lt 16) { return $false }
+        $jsonLen   = [BitConverter]::ToUInt32($b, 12)
+        $dataStart = 12 + [BitConverter]::ToUInt32($b, 8)
+        if ($jsonLen -le 0 -or (16 + $jsonLen) -gt $b.Length) { return $false }
+        $json = [System.Text.Encoding]::UTF8.GetString($b, 16, $jsonLen)
+        $pat  = '"utils\.js":\{"size":(\d+),"offset":"(\d+)"'
+        foreach ($m in [regex]::Matches($json, $pat)) {
+            $off = [int64]$m.Groups[2].Value
+            $sz  = [int]$m.Groups[1].Value
+            if ($off -lt 0 -or $sz -le 0 -or ($dataStart + $off + $sz) -gt $b.Length) { continue }
+            $content = [System.Text.Encoding]::UTF8.GetString($b, [int]($dataStart + $off), $sz)
+            if ($content.Contains($Marker)) { return $true }
+        }
+    } catch { }
+    return $false
+}
+
 # ---------- 定位 Antigravity 客户端（默认位置 → 注册表兜底） ----------
 function Get-ClientResources {
     $found = @()
@@ -51,32 +73,11 @@ $ThemeDirs  = @(
 )
 Ok "已定位客户端：$ResDir"
 
-foreach ($f in $Payloads) {
-    if (-not (Test-Path (Join-Path $ScriptDir $f))) {
-        Die "缺少主题文件 $f —— 请在完整的主题包内运行本脚本。"
-    }
-}
-
-# ---------- 卸载 ----------
-if ($Uninstall) {
-    if (Test-Path $BackupPath) {
-        Copy-Item $BackupPath $AsarPath -Force
-        Ok "已还原原生 app.asar（来自 app.asar.stock-backup）"
-    } else {
-        Write-Host "[!] 未找到 app.asar.stock-backup，跳过还原" -ForegroundColor Yellow
-    }
-    foreach ($d in $ThemeDirs) {
-        if (Test-Path $d) { Remove-Item $d -Recurse -Force; Ok "已删除 $d" }
-    }
-    Write-Host "`n卸载完成。重启 Antigravity 即恢复原版外观。"
-    exit 0
-}
-
-# ---------- 关闭正在运行的客户端（asar 与主题文件需要落盘） ----------
+# ---------- 关闭正在运行的客户端（安装与卸载都需要释放文件句柄，杜绝写冲突） ----------
 $running = Get-Process Antigravity -ErrorAction SilentlyContinue
 if ($running) {
     Write-Host "检测到 Antigravity 正在运行。"
-    $ans = Read-Host "自动关闭它并继续安装？(Y/N)"
+    $ans = Read-Host "自动关闭它并继续？(Y/N)"
     if ($ans -match '^[Yy]') {
         try {
             $running | Stop-Process -Force -ErrorAction Stop
@@ -90,6 +91,36 @@ if ($running) {
     }
 }
 
+# ---------- 卸载 ----------
+if ($Uninstall) {
+    $currentPatched = Test-AsarPatched $AsarPath
+    if (Test-Path $BackupPath) {
+        if (-not $currentPatched) {
+            Write-Host "[!] 当前 app.asar 未检测到主题钩子（客户端可能已自动升级）。" -ForegroundColor Yellow
+            Write-Host "    为避免把新版客户端回滚成旧版，已跳过还原，仅清理主题文件。" -ForegroundColor Yellow
+        } elseif (Test-AsarPatched $BackupPath) {
+            Write-Host "[!] app.asar.stock-backup 自身含主题钩子（备份已被污染），已跳过还原以避免残留。" -ForegroundColor Yellow
+        } else {
+            Copy-Item $BackupPath $AsarPath -Force
+            Ok "已还原原生 app.asar（来自 app.asar.stock-backup）"
+        }
+    } else {
+        Write-Host "[!] 未找到 app.asar.stock-backup，跳过还原" -ForegroundColor Yellow
+    }
+    foreach ($d in $ThemeDirs) {
+        if (Test-Path $d) { Remove-Item $d -Recurse -Force; Ok "已删除 $d" }
+    }
+    Write-Host "`n卸载完成。重启 Antigravity 即恢复原版外观。"
+    exit 0
+}
+
+# ---------- 载荷校验（仅安装需要） ----------
+foreach ($f in $Payloads) {
+    if (-not (Test-Path (Join-Path $ScriptDir $f))) {
+        Die "缺少主题文件 $f —— 请在完整的主题包内运行本脚本。"
+    }
+}
+
 # ---------- 分发主题文件 ----------
 foreach ($d in $ThemeDirs) {
     if (-not (Test-Path $d)) { New-Item -ItemType Directory -Path $d -Force | Out-Null }
@@ -100,11 +131,6 @@ foreach ($d in $ThemeDirs) {
 Ok ("主题文件已安装到 {0} 个位置" -f $ThemeDirs.Count)
 
 # ---------- app.asar 补丁 ----------
-if (-not (Test-Path $BackupPath)) {
-    Copy-Item $AsarPath $BackupPath
-    Ok "已备份原版 app.asar -> app.asar.stock-backup"
-}
-
 $bytes     = [System.IO.File]::ReadAllBytes($AsarPath)
 $jsonLen   = [BitConverter]::ToUInt32($bytes, 12)
 $dataStart = 12 + [BitConverter]::ToUInt32($bytes, 8)
@@ -129,6 +155,26 @@ foreach ($m in $matches0) {
     }
 }
 if (-not $entry) { Die "未找到代码注入锚点（客户端版本可能已变化），已取消修改" }
+
+# ---------- 原生备份维护（版本自愈） ----------
+# 关键：只有「当前 asar 尚未注入钩子」时，它才是可信的原生真源。
+# 客户端自动升级会覆盖 app.asar（钩子消失、版本变新），此时必须刷新备份，
+# 否则日后卸载会把新版客户端错误还原成旧版；反之已注入钩子的 asar 绝不能覆盖备份。
+if (Test-Path $BackupPath) {
+    if (-not $patched) {
+        $currentHash = (Get-FileHash $AsarPath -Algorithm SHA256).Hash
+        $backupHash  = (Get-FileHash $BackupPath -Algorithm SHA256).Hash
+        if ($currentHash -ne $backupHash) {
+            Copy-Item $AsarPath $BackupPath -Force
+            Ok "检测到客户端版本已升级，已自动更新原生备份：app.asar.stock-backup"
+        }
+    }
+} elseif ($patched) {
+    Write-Host "[!] app.asar 已含主题钩子但缺少原生备份，跳过备份以免污染（如后续异常请重新安装客户端）。" -ForegroundColor Yellow
+} else {
+    Copy-Item $AsarPath $BackupPath
+    Ok "已备份原版 app.asar -> app.asar.stock-backup"
+}
 
 if ($patched) {
     Ok "app.asar 已包含主题钩子，跳过补丁"
