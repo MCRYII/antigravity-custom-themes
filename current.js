@@ -25,16 +25,27 @@
     };
     let currentMode = 'system';
 
+    // 启动校准代际屏障：用户每次主动切换都会自增；慢速返回的旧快照据此丢弃，
+    // 杜绝「晚到的旧设置把用户最新选择覆盖回去」的竞态。
+    let userInteractionEpoch = 0;
+    // 原生存储写队列：串行化 updateItems，避免快速连点时并发读改写互相覆盖。
+    let nativeWriteQueue = Promise.resolve();
+
+    function queueNativeUpdate(patch) {
+        if (!(window.nativeStorage && typeof window.nativeStorage.updateItems === 'function')) return;
+        nativeWriteQueue = nativeWriteQueue.then(() => {
+            return Promise.resolve(window.nativeStorage.updateItems(patch)).catch(() => {});
+        }).catch(() => {});
+    }
+
     function saveModePref(mode, persistNative) {
         try {
             localStorage.setItem(MODE_PREF_MIRROR_KEY, mode);
         } catch (e) {}
         if (persistNative === false) return;
-        try {
-            if (window.nativeStorage && typeof window.nativeStorage.updateItems === 'function') {
-                Promise.resolve(window.nativeStorage.updateItems({ [MODE_PREF_KEY]: mode })).catch(() => {});
-            }
-        } catch (e) {}
+        // 用户主动切换：立即使启动校准快照失效，并串行写入原生存储
+        userInteractionEpoch++;
+        queueNativeUpdate({ [MODE_PREF_KEY]: mode });
     }
 
     function readModePref() {
@@ -78,19 +89,7 @@
         return (dark && theme.nameDark) ? theme.nameDark : theme.name;
     }
 
-    // 启动校准：以 nativeStorage 主存为准恢复外观模式
-    function reconcileModePref() {
-        try {
-            if (!(window.nativeStorage && typeof window.nativeStorage.getItems === 'function')) return;
-            Promise.resolve(window.nativeStorage.getItems()).then((items) => {
-                const saved = items ? items[MODE_PREF_KEY] : null;
-                if (saved && MODE_CYCLE.indexOf(saved) >= 0 && saved !== currentMode) {
-                    currentMode = saved;
-                    applyTheme(activeThemeId(), false);
-                }
-            }).catch(() => {});
-        } catch (e) {}
-    }
+    // 启动校准统一由 reconcileAllPrefs() 单快照完成（见 saveThemePref 之后的实现）
 
     let lastAppliedOverlay = null;
     let lastIsDark = null;
@@ -110,11 +109,9 @@
             localStorage.setItem('antigravity_selected_theme', themeId);
         } catch (e) {}
         if (persistNative === false) return;
-        try {
-            if (window.nativeStorage && typeof window.nativeStorage.updateItems === 'function') {
-                Promise.resolve(window.nativeStorage.updateItems({ [THEME_PREF_KEY]: themeId })).catch(() => {});
-            }
-        } catch (e) {}
+        // 用户主动切换：立即使启动校准快照失效，并串行写入原生存储
+        userInteractionEpoch++;
+        queueNativeUpdate({ [THEME_PREF_KEY]: themeId });
     }
 
     // 实际生效主题 ID（首次应用完成前回落到持久化读取）
@@ -122,14 +119,37 @@
         return lastActiveId || getActiveThemeId();
     }
 
-    // 启动校准：以 nativeStorage 主存为准，仅当为合法主题 ID 且与当前已应用主题不同时切换
-    function reconcileThemePref() {
+    // 启动校准：单快照合并读取主题与外观模式，代际屏障保证用户最新交互优先。
+    // 仅当值合法且与当前状态不同才切换；校准阶段不向 native 回写，避免覆盖真实偏好。
+    function reconcileAllPrefs() {
         try {
             if (!(window.nativeStorage && typeof window.nativeStorage.getItems === 'function')) return;
+            const startEpoch = userInteractionEpoch;
             Promise.resolve(window.nativeStorage.getItems()).then((items) => {
-                const saved = items ? items[THEME_PREF_KEY] : null;
-                if (saved && saved !== lastActiveId && THEMES.some((t) => t.id === saved)) {
-                    applyTheme(saved, false);
+                // 代际屏障：等待期间用户已手动点击/切换，本快照已过期，直接丢弃
+                if (userInteractionEpoch !== startEpoch || !items) return;
+
+                const savedMode = items[MODE_PREF_KEY];
+                const savedTheme = items[THEME_PREF_KEY];
+
+                let modeChanged = false;
+                if (savedMode && MODE_CYCLE.indexOf(savedMode) >= 0 && savedMode !== currentMode) {
+                    currentMode = savedMode;
+                    // 同步会话镜像，保持 UI / nativeStorage / localStorage 三方一致
+                    saveModePref(savedMode, false);
+                    modeChanged = true;
+                }
+
+                let targetTheme = activeThemeId();
+                let themeChanged = false;
+                if (savedTheme && savedTheme !== lastActiveId && THEMES.some((t) => t.id === savedTheme)) {
+                    targetTheme = savedTheme;
+                    themeChanged = true;
+                }
+
+                if (modeChanged || themeChanged) {
+                    // 启动校准阶段不回写 native，且由 applyTheme 同步刷新 localStorage 镜像
+                    applyTheme(targetTheme, false);
                 }
             }).catch(() => {});
         } catch (e) {}
@@ -214,134 +234,91 @@
         return lum > 0.55 ? '#1B2A4A' : '#FFFFFF';
     }
 
-    // === 终端（xterm）浅色基底定向桥接与高对比度 ANSI 16 色注入 ===
+    // === 终端（xterm）浅色基底定向桥接 ===
     // 1. 保持 CSS 中 :root { --background: transparent !important } 不变，防止聊天区 .md-sticky-message-bleed::before
     //    及底部 48px linear-gradient(to top, var(--background), transparent) 出现灰白横条；
     // 2. 仅当 JS（如 xterm 的 useTerminalTheme / esb()）调用 getComputedStyle(documentElement).getPropertyValue('--background')
     //    且当前非官方原版（stock）时，定向返回主题的 --terminal-bg 实色 HEX，杜绝 xterm 回退 #000000 死黑；
-    // 3. 为 xterm 的 theme 对象（特征：同时具备 cursorAccent 与 selectionBackground 属性）提供对比度 >= 4.55:1 的
-    //    主题专属浅色 ANSI 16 色，防止 xterm 内置 minimumContrastRatio: 4.5 将默认 Tango 亮绿压暗成难看的橄榄绿内联样式。
-    const TERM_ANSI_PALETTES = {
-        gemini: {
-            black: '#1B2A4A', red: '#B31412', green: '#137333', yellow: '#8F4B00',
-            blue: '#174EA6', magenta: '#681DA8', cyan: '#006A71', white: '#4A5568',
-            brightBlack: '#525A65', brightRed: '#C5221F', brightGreen: '#137333', brightYellow: '#944E00',
-            brightBlue: '#1967D2', brightMagenta: '#7627BB', brightCyan: '#006A71', brightWhite: '#1B2A4A'
-        },
-        sky: {
-            black: '#174d6b', red: '#B31412', green: '#0F6E66', yellow: '#8F4B00',
-            blue: '#0369A1', magenta: '#5B21B6', cyan: '#0E6B84', white: '#475569',
-            brightBlack: '#526071', brightRed: '#C5221F', brightGreen: '#0F6E66', brightYellow: '#944E00',
-            brightBlue: '#0369A1', brightMagenta: '#6D28D9', brightCyan: '#0E6B84', brightWhite: '#174d6b'
-        },
-        cyan: {
-            black: '#134E48', red: '#B31412', green: '#046C4E', yellow: '#8F4B00',
-            blue: '#0F6E66', magenta: '#5B21B6', cyan: '#0F6E66', white: '#475569',
-            brightBlack: '#526071', brightRed: '#C5221F', brightGreen: '#046C4E', brightYellow: '#944E00',
-            brightBlue: '#0F6E66', brightMagenta: '#6D28D9', brightCyan: '#0F6E66', brightWhite: '#134E48'
-        },
-        orange: {
-            black: '#612B09', red: '#B31412', green: '#166534', yellow: '#8F4B00',
-            blue: '#B53C0A', magenta: '#6B21A8', cyan: '#0F6E66', white: '#57534E',
-            brightBlack: '#615C56', brightRed: '#C5221F', brightGreen: '#166534', brightYellow: '#944E00',
-            brightBlue: '#9A3412', brightMagenta: '#7E22CE', brightCyan: '#0F6E66', brightWhite: '#612B09'
-        },
-        red: {
-            black: '#5C1D27', red: '#B91C1C', green: '#166534', yellow: '#8F4B00',
-            blue: '#BE123C', magenta: '#701A75', cyan: '#0F6E66', white: '#57534E',
-            brightBlack: '#615C56', brightRed: '#BE123C', brightGreen: '#166534', brightYellow: '#944E00',
-            brightBlue: '#9F1239', brightMagenta: '#86198F', brightCyan: '#0F6E66', brightWhite: '#5C1D27'
-        }
-    };
-
-    // 深色终端高对比度 ANSI 16 色：所有配色均针对深色 --terminal-bg 校准（≥ 4.8:1）。
-    // 通过 Object.prototype getter 注入 xterm theme 对象，与第 19 节 .xterm-fg-* 双保险。
-    const TERM_ANSI_DARK_COLORS = {
-        black: '#94A3B8', red: '#F87171', green: '#4ADE80', yellow: '#FBBF24',
-        blue: '#60A5FA', magenta: '#C084FC', cyan: '#2DD4BF', white: '#E2E8F0',
-        brightBlack: '#94A3B8', brightRed: '#FCA5A5', brightGreen: '#86EFAC',
-        brightYellow: '#FDE047', brightBlue: '#93C5FD', brightMagenta: '#D8B4FE',
-        brightCyan: '#5EEAD4', brightWhite: '#F8FAFC'
-    };
-    const TERM_ANSI_PALETTES_DARK = {
-        gemini: TERM_ANSI_DARK_COLORS,
-        sky: TERM_ANSI_DARK_COLORS,
-        cyan: TERM_ANSI_DARK_COLORS,
-        orange: TERM_ANSI_DARK_COLORS,
-        red: TERM_ANSI_DARK_COLORS
-    };
-
+    // 3. ANSI 16 色完全由各主题 CSS 第 19 节的 [data-testid="terminal-active"] .xterm-fg-* 接管，
+    //    彻底废除此前的 Object.prototype getter 注入：官方原版与全站环境保持零原型污染。
     try {
         const origGetPropertyValue = CSSStyleDeclaration.prototype.getPropertyValue;
+        // getComputedStyle 每次调用都会返回新的声明包装对象，不能用 === 直接比较；
+        // 这里登记「根元素行内样式」与「根元素计算样式」，把桥接严格限定在根作用域。
+        const rootDeclarations = new WeakSet();
+
+        try {
+            if (document.documentElement) {
+                rootDeclarations.add(document.documentElement.style);
+                if (typeof window.getComputedStyle === 'function') {
+                    const origGetComputedStyle = window.getComputedStyle;
+                    rootDeclarations.add(origGetComputedStyle.call(window, document.documentElement));
+                    window.getComputedStyle = function(el, pseudo) {
+                        const decl = origGetComputedStyle.call(window, el, pseudo);
+                        try {
+                            if (el === document.documentElement && !pseudo) rootDeclarations.add(decl);
+                        } catch (e) {}
+                        return decl;
+                    };
+                }
+            }
+        } catch (e) {}
+
         CSSStyleDeclaration.prototype.getPropertyValue = function(prop) {
             const val = origGetPropertyValue.call(this, prop);
             if (prop === '--background' && val && val.trim() === 'transparent' && activeThemeId() !== 'stock') {
-                const termBg = origGetPropertyValue.call(this, '--terminal-bg').trim();
-                if (termBg) return termBg;
+                // 严格限制受众：仅根元素计算样式或根元素行内样式，绝不污染普通元素 inline style 与 CSSRule
+                let isRoot = false;
+                try {
+                    isRoot = (this === document.documentElement.style) || rootDeclarations.has(this);
+                } catch (e) {}
+                if (isRoot) {
+                    const termBg = origGetPropertyValue.call(this, '--terminal-bg').trim();
+                    if (termBg) return termBg;
+                }
             }
             return val;
         };
-
-        const ansiKeys = [
-            'black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white',
-            'brightBlack', 'brightRed', 'brightGreen', 'brightYellow', 'brightBlue', 'brightMagenta', 'brightCyan', 'brightWhite'
-        ];
-        ansiKeys.forEach((key) => {
-            if (key in Object.prototype) return;
-            Object.defineProperty(Object.prototype, key, {
-                configurable: true,
-                enumerable: false,
-                get() {
-                    if (this && typeof this === 'object' &&
-                        Object.prototype.hasOwnProperty.call(this, 'cursorAccent') &&
-                        Object.prototype.hasOwnProperty.call(this, 'selectionBackground')) {
-                        const id = activeThemeId();
-                        // 官方原版保持静默退避：不注入任何 ANSI 色板
-                        // 自定义主题按有效深浅选择浅色 / 深色高对比色板
-                        const pal = id === 'stock'
-                            ? null
-                            : (isEffectiveDark()
-                                ? (TERM_ANSI_PALETTES_DARK[id] || TERM_ANSI_DARK_COLORS)
-                                : TERM_ANSI_PALETTES[id]);
-                        if (pal && pal[key]) return pal[key];
-                    }
-                    return undefined;
-                },
-                // 赋值安全兜底：这些键名（red/green/blue/white...）在宿主与三方库里极为常见，
-                // 只挂 getter 会让严格模式下的 `obj.red = x` 抛 TypeError（Node 内部 util/colors 即如此）。
-                // 这里让赋值退化为「在接收者自身上定义同名数据属性」，语义与普通对象完全一致。
-                set(value) {
-                    Object.defineProperty(this, key, {
-                        value: value,
-                        writable: true,
-                        enumerable: true,
-                        configurable: true
-                    });
-                }
-            });
-        });
     } catch (e) {}
 
     // 动态提取宿主真实未偏色的 CSS 变量十六进制色值（1:1 复刻 Antigravity 官方 main.js 的 Bvb 取色算法）
+    // 透明度容错：transparent / inherit / initial / unset / alpha < 0.95 一律回退 fallback，
+    // 杜绝把 rgba(0, 0, 0, 0) 误判成 #000000 造成标题栏纯黑死块。
     function readCssVarHex(varName, fallback) {
         try {
             const raw = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
-            if (!raw) return fallback;
+            if (!raw || raw === 'transparent' || raw === 'inherit' || raw === 'initial' || raw === 'unset') return fallback;
+
+            // 3 位 Hex 规范化为 6 位（#abc -> #aabbcc）
+            if (/^#[0-9a-fA-F]{3}$/.test(raw)) {
+                return '#' + raw[1] + raw[1] + raw[2] + raw[2] + raw[3] + raw[3];
+            }
+            if (/^#[0-9a-fA-F]{6}$/.test(raw)) return raw;
+
+            const host = document.body || document.documentElement;
             const el = document.createElement('div');
-            el.style.color = `var(${varName})`;
+            el.style.color = raw;
             el.style.display = 'none';
-            document.body.appendChild(el);
+            host.appendChild(el);
             const computed = getComputedStyle(el).color;
-            el.remove();
-            const srgbMatch = computed.match(/color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)/);
+            host.removeChild(el);
+
+            const alphaOf = (a) => (a === undefined || a === '') ? 1 : parseFloat(a);
+
+            // 现代 color(srgb r g b / a) 语法
+            const srgbMatch = computed.match(/color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+))?/);
             if (srgbMatch) {
+                if (alphaOf(srgbMatch[4]) < 0.95) return fallback;
                 const r = Math.round(parseFloat(srgbMatch[1]) * 255);
                 const g = Math.round(parseFloat(srgbMatch[2]) * 255);
                 const b = Math.round(parseFloat(srgbMatch[3]) * 255);
                 return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
             }
-            const rgbMatch = computed.match(/rgba?\(([\d]+),\s*([\d]+),\s*([\d]+)/);
+
+            // 传统 rgb() / rgba()，兼容逗号与空格分隔
+            const rgbMatch = computed.match(/^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s\/]+([\d.]+))?\s*\)/);
             if (rgbMatch) {
+                if (alphaOf(rgbMatch[4]) < 0.95) return fallback;
                 const r = parseInt(rgbMatch[1], 10);
                 const g = parseInt(rgbMatch[2], 10);
                 const b = parseInt(rgbMatch[3], 10);
@@ -374,7 +351,12 @@
         // 确保切换主题或切回原版时，xterm.options.theme 能即时重新执行 Cpb() 获取最新 --background，
         // 彻底杜绝终端画布黑块与切回原版后的历史状态残留
         try {
-            document.documentElement.style.setProperty('--antigravity-active-theme-id', theme.id);
+            if (theme.id === 'stock') {
+                // 官方原版：无条件移除本引擎写入的标记，恢复 100% 零侵入
+                document.documentElement.style.removeProperty('--antigravity-active-theme-id');
+            } else {
+                document.documentElement.style.setProperty('--antigravity-active-theme-id', theme.id);
+            }
         } catch (e) {}
 
         // 标题栏贴合校准：官方原版动态采样原生变量，自定义主题按主题色无缝贴合
@@ -886,9 +868,9 @@
 
     // 立即初始化当前主题（首次应用不回写主存，避免把 localStorage 缺失时的回退值覆盖到真实偏好上）
     applyTheme(getActiveThemeId(), false);
-    // 启动校准：以 app 原生持久化存储（nativeStorage）记住的主题与外观模式为准
-    reconcileThemePref();
-    reconcileModePref();
+    // 启动校准：单快照读取 app 原生持久化存储（nativeStorage）记住的主题与外观模式，
+    // 代际屏障保证等待期间用户的手动切换永远优先于晚到的旧快照
+    reconcileAllPrefs();
 
     // 跟随系统模式：系统深浅色偏好变化时重新注入对应变体
     try {
