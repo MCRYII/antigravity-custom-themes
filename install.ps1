@@ -1,20 +1,65 @@
-﻿# =====================================================================
+# =====================================================================
 #  Antigravity Custom Themes - One-Click Installer
 #  1) 备份 app.asar  2) 注入主题加载钩子（幂等）  3) 分发主题文件
 #  用法:  右键"使用 PowerShell 运行" 或 双击 install.bat
 #  卸载:  powershell -File install.ps1 -Uninstall
 # =====================================================================
-param([switch]$Uninstall)
+param(
+    [switch]$Uninstall,
+    [switch]$CheckUpdate
+)
 $ErrorActionPreference = 'Stop'
 
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$Marker    = 'custom-theme injection hook'
-$Anchor    = "void win.loadURL(url);"
-$Payloads  = @('current.css', 'current.js')
+$ScriptDir      = Split-Path -Parent $MyInvocation.MyCommand.Path
+$Marker         = 'custom-theme injection hook'
+$Anchor         = "void win.loadURL(url);"
+$Payloads       = @('current.css', 'current.js')
+$CurrentVersion = 'v2.0'
+$Repo           = 'MCRYII/antigravity-custom-themes'
+$ReleasesUrl    = "https://github.com/$Repo/releases/latest"
 
 function Die([string]$msg) { Write-Host "[X] $msg" -ForegroundColor Red; exit 1 }
 function Ok([string]$msg)  { Write-Host "[OK] $msg" -ForegroundColor Green }
 $hex = { param($b) ([System.BitConverter]::ToString($b)).Replace('-', '').ToLower() }
+
+# ---------- 检查更新分支 ----------
+if ($CheckUpdate) {
+    Write-Host "[*] 正在检测 GitHub 最新发行版..." -ForegroundColor Cyan
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        $apiUrl = "https://api.github.com/repos/$Repo/releases/latest"
+        $headers = @{ 'User-Agent' = 'Antigravity-Theme-Updater' }
+        $release = Invoke-RestMethod -Uri $apiUrl -Headers $headers -TimeoutSec 10 -ErrorAction Stop
+
+        $remoteTag   = $release.tag_name
+        $publishedAt = if ($release.published_at) { $release.published_at.Substring(0, 10) } else { "近期" }
+        $htmlUrl     = if ($release.html_url) { $release.html_url } else { $ReleasesUrl }
+
+        Write-Host ""
+        if ($remoteTag -and ($remoteTag.Trim().ToLower() -ne $CurrentVersion.Trim().ToLower())) {
+            Write-Host "[!] 发现新版本：$remoteTag （当前版本：$CurrentVersion）" -ForegroundColor Green
+            Write-Host "    发布时间：$publishedAt" -ForegroundColor Gray
+            if ($release.body) {
+                Write-Host "`n更新摘要：" -ForegroundColor Yellow
+                $summary = ($release.body -split "`n" | Where-Object { $_ -match '^[-*#0-9]' } | Select-Object -First 5) -join "`n"
+                if ($summary) { Write-Host $summary -ForegroundColor Gray }
+            }
+            Write-Host ""
+            $open = Read-Host "是否在浏览器中打开最新版本下载页面？(Y/N) [默认 Y]"
+            if ($open -eq '' -or $open -match '^[Yy]') {
+                Start-Process $htmlUrl
+                Ok "已调起默认浏览器打开发布页面。"
+            }
+        } else {
+            Ok "当前已是最新版本 ($CurrentVersion)，无需更新。"
+        }
+    } catch {
+        Write-Host "[!] 检查更新失败（可能由于网络连接 GitHub 偶发超时）。" -ForegroundColor Yellow
+        Write-Host "    您也可以随时直接在浏览器中访问：" -ForegroundColor Gray
+        Write-Host "    $ReleasesUrl" -ForegroundColor Cyan
+    }
+    exit 0
+}
 
 # 只读检测：app.asar 内是否已包含主题注入钩子（结构变化时安全返回 $false，不抛错）
 function Test-AsarPatched([string]$path) {
