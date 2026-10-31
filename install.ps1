@@ -1,4 +1,4 @@
-# =====================================================================
+﻿# =====================================================================
 #  Antigravity Custom Themes - One-Click Installer
 #  1) 备份 app.asar  2) 注入主题加载钩子（幂等）  3) 分发主题文件
 #  用法:  右键"使用 PowerShell 运行" 或 双击 install.bat
@@ -51,7 +51,36 @@ if ($CheckUpdate) {
                 Ok "已调起默认浏览器打开发布页面。"
             }
         } else {
-            Ok "当前已是最新版本 ($CurrentVersion)，无需更新。"
+            # 同版本热补丁 (Hotfix) 检测：对比 GitHub 附件更新时间与本地构建时间
+            $zipAsset = $release.assets | Where-Object { $_.name -like 'antigravity-custom-themes-*.zip' } | Select-Object -First 1
+            $isHotfix = $false
+            if ($zipAsset -and $zipAsset.updated_at) {
+                try {
+                    $remoteTime = [DateTime]::Parse($zipAsset.updated_at).ToUniversalTime()
+                    $localFile  = Join-Path $ScriptDir 'current.js'
+                    if (Test-Path $localFile) {
+                        $localTime = (Get-Item $localFile).LastWriteTimeUtc
+                        # 云端更新时间若晚于本地文件构建时间 3 分钟以上，判定存在热修复包
+                        if ($remoteTime -gt $localTime.AddMinutes(3)) {
+                            $isHotfix = $true
+                        }
+                    }
+                } catch { }
+            }
+
+            if ($isHotfix) {
+                Write-Host "[!] 检测到当前版本 ($CurrentVersion) 发布了热修复补丁包 (Hotfix)！" -ForegroundColor Green
+                Write-Host "    云端附件更新时间：$($remoteTime.ToLocalTime().ToString('yyyy-MM-dd HH:mm:ss'))" -ForegroundColor Gray
+                Write-Host "    本地文件构建时间：$($localTime.ToLocalTime().ToString('yyyy-MM-dd HH:mm:ss'))" -ForegroundColor Gray
+                Write-Host ""
+                $open = Read-Host "是否在浏览器中打开最新热修复包下载页面？(Y/N) [默认 Y]"
+                if ($open -eq '' -or $open -match '^[Yy]') {
+                    Start-Process $htmlUrl
+                    Ok "已调起默认浏览器打开发布页面。"
+                }
+            } else {
+                Ok "当前已是最新版本 ($CurrentVersion)，且无新的热修复，无需更新。"
+            }
         }
     } catch {
         Write-Host "[!] 检查更新失败（可能由于网络连接 GitHub 偶发超时）。" -ForegroundColor Yellow
