@@ -22,7 +22,9 @@ __pycache__/
 问题.md
 想法.md
 _review/
+_video/
 assets/*.mp4
+assets/audio/
 
 # Theme development sources (kept locally, not part of the distributable package)
 指南.md
