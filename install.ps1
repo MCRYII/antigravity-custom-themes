@@ -14,7 +14,7 @@ $ScriptDir      = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Marker         = 'custom-theme injection hook'
 $Anchor         = "void win.loadURL(url);"
 $Payloads       = @('current.css', 'current.js')
-$CurrentVersion = 'v2.0'
+$CurrentVersion = 'v2.1'
 $Repo           = 'MCRYII/antigravity-custom-themes'
 $ReleasesUrl    = "https://github.com/$Repo/releases/latest"
 

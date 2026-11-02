@@ -34,17 +34,21 @@ sky-light.css
 cyan-light.css
 orange-light.css
 red-light.css
+purple-light.css
 gemini-dark.css
 sky-dark.css
 cyan-dark.css
 orange-dark.css
 red-dark.css
+purple-dark.css
 stock.css
 
 # Video generation & audio sources
 _video/
 assets/audio/
 
-# Task & runner markers
+# Task & runner markers (dotted + plain prefix, plus generated plan drafts)
 .dsh_*
+dsh_*
+*implementation_plan.md
 
