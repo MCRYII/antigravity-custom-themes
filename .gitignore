@@ -40,3 +40,11 @@ cyan-dark.css
 orange-dark.css
 red-dark.css
 stock.css
+
+# Video generation & audio sources
+_video/
+assets/audio/
+
+# Task & runner markers
+.dsh_*
+
