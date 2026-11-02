@@ -144,3 +144,23 @@ div[class*="animate-modalFadeIn"]:has([data-testid="mermaid-lightbox-viewport"])
 [data-testid="media-modal-zoom-controls"] button:hover {
   background: var(--media-capsule-hover, rgba(255, 255, 255, 0.15)) !important;
 }
+
+/* === 自定义主题：辅助面板最大化底层首栏遮挡垫片 ===
+   根因：原版布局引擎（i2 / aT / bnb）最大化辅助面板时只切换 position/z-index，
+   底层首栏（会话标题、聊天气泡、主题胶囊、Open IDE）并未卸载；原版靠
+   .bg-background 的 100% 不透明实底完成物理遮蔽。自定义主题为全局毛玻璃把
+   --background 设成 transparent，辅助面板于是变成「透明玻璃纸」，底层内容
+   直接透出造成标题/正文双重曝光。
+   修复：只在「自定义主题 + 辅助面板最大化」时对底层左侧会话列施加
+   visibility: hidden + pointer-events: none。visibility 不脱离布局流，
+   React 虚拟列表的几何、滚动偏移、焦点状态全部原样驻留，Restore 时零跳变。
+   双重状态嗅探：
+     1) CSS :has() 直接读 Restore Pane 的 aria-label（零 JS 依赖的即时路径）；
+     2) current.js 同步的 html[data-aux-pane-maximized="true"] 运行时兜底
+        （兼容不支持复杂 :has() 遍历或按钮浮层被移到 split 容器外的情况）。
+   作用域铁律：仅 html[data-ag-custom-theme] 生效，官方原版 100% 零侵入。 */
+html[data-ag-custom-theme][data-aux-pane-maximized="true"] .agy-sheet > div.relative.flex.w-full.h-full.outline-none > div.flex:first-child,
+html[data-ag-custom-theme] div.flex-1.flex.min-h-0.relative:has([data-testid="toggle-maximize-pane"][aria-label="Restore Pane"]) .agy-sheet > div.relative.flex.w-full.h-full.outline-none > div.flex:first-child {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
