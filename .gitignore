@@ -52,5 +52,7 @@ assets/audio/
 # Task & runner markers (dotted + plain prefix, plus generated plan drafts)
 .dsh_*
 dsh_*
+.pi_*
+pi_*
 *implementation_plan.md
 

@@ -127,9 +127,16 @@ function Get-ClientResources {
     foreach ($prop in $props) {
         if (-not $prop.DisplayName -or $prop.DisplayName -notlike 'Antigravity*') { continue }
         if ($prop.DisplayName -like '*IDE*' -or -not $prop.DisplayIcon) { continue }
-        $exe = ($prop.DisplayIcon -split ',')[0].Trim()
-        $res = Join-Path (Split-Path -Parent $exe) 'resources'
-        if ((Test-Path (Join-Path $res 'app.asar')) -and ($found -notcontains $res)) { $found += $res }
+        try {
+            # DisplayIcon 常见形如 "C:\...\Antigravity.exe",0 —— 必须先剥离外层双引号，否则 Split-Path 会抛错中断
+            $exe = (($prop.DisplayIcon -split ',')[0]).Trim().Trim('"')
+            if (-not $exe) { continue }
+            $res = Join-Path (Split-Path -Parent $exe) 'resources'
+            if ((Test-Path (Join-Path $res 'app.asar')) -and ($found -notcontains $res)) { $found += $res }
+        } catch {
+            # 单条畸形注册表记录绝不阻断其余候选的探测
+            continue
+        }
     }
     return , $found
 }
@@ -146,6 +153,37 @@ $ThemeDirs  = @(
     (Join-Path $env:APPDATA 'Antigravity\custom-theme')
 )
 Ok "已定位客户端：$ResDir"
+
+# ---------- 载荷校验（安装前 Fail-Fast：在关闭客户端进程之前完成，包体残缺时绝不误杀正在运行的客户端） ----------
+if (-not $Uninstall) {
+    foreach ($f in $Payloads) {
+        if (-not (Test-Path (Join-Path $ScriptDir $f))) {
+            Die "缺少主题文件 $f —— 请在完整的主题包内运行本脚本。"
+        }
+    }
+}
+
+# ---------- 机器级目录提权预检（Program Files 需管理员权限，提前给出友好提示而非裸异常崩溃） ----------
+$machineRoots = @($env:ProgramFiles, ${env:ProgramFiles(x86)}) | Where-Object { $_ }
+$needsAdmin = $false
+foreach ($root in $machineRoots) {
+    $prefix = $root.TrimEnd('\') + '\'
+    if ($ResDir.StartsWith($prefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        $needsAdmin = $true
+        break
+    }
+}
+if ($needsAdmin) {
+    $isAdmin = $false
+    try {
+        $identity  = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+        $principal = New-Object System.Security.Principal.WindowsPrincipal -ArgumentList $identity
+        $isAdmin   = $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+    } catch { }
+    if (-not $isAdmin) {
+        Die "目标客户端位于受保护的 Program Files 目录（$ResDir）。请右键 install.bat 选择「以管理员身份运行」后重试。"
+    }
+}
 
 # ---------- 关闭正在运行的客户端（安装与卸载都需要释放文件句柄，杜绝写冲突） ----------
 $running = Get-Process Antigravity -ErrorAction SilentlyContinue
@@ -186,13 +224,6 @@ if ($Uninstall) {
     }
     Write-Host "`n卸载完成。重启 Antigravity 即恢复原版外观。"
     exit 0
-}
-
-# ---------- 载荷校验（仅安装需要） ----------
-foreach ($f in $Payloads) {
-    if (-not (Test-Path (Join-Path $ScriptDir $f))) {
-        Die "缺少主题文件 $f —— 请在完整的主题包内运行本脚本。"
-    }
 }
 
 # ---------- 分发主题文件 ----------
@@ -289,7 +320,6 @@ if ($patched) {
 
     # 重算 asar integrity（整文件 SHA256 + 分块 SHA256）
     $sha = [System.Security.Cryptography.SHA256]::Create()
-    $hex = { param($b) ([System.BitConverter]::ToString($b)).Replace('-', '').ToLower() }
     $blockSize = [int]$entry.Groups[4].Value
     $blocks = @()
     for ($i = 0; $i -lt $newUtilsBytes.Length; $i += $blockSize) {
