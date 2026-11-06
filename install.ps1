@@ -1,4 +1,4 @@
-﻿# =====================================================================
+# =====================================================================
 #  Antigravity Custom Themes - One-Click Installer
 #  1) 备份 app.asar  2) 注入主题加载钩子（幂等）  3) 分发主题文件
 #  用法:  右键"使用 PowerShell 运行" 或 双击 install.bat
@@ -14,7 +14,7 @@ $ScriptDir      = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Marker         = 'custom-theme injection hook'
 $Anchor         = "void win.loadURL(url);"
 $Payloads       = @('current.css', 'current.js')
-$CurrentVersion = 'v2.1'
+$CurrentVersion = 'v2.2'
 $Repo           = 'MCRYII/antigravity-custom-themes'
 $ReleasesUrl    = "https://github.com/$Repo/releases/latest"
 

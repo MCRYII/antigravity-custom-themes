@@ -4,12 +4,16 @@
 
 > 📦 本仓库的 GitHub 远端（`MCRYII/antigravity-custom-themes`）为主发行包分发仓：发行包、安装脚本与更新说明均以此处为准；主题开发源码与验收工具保留在本地工作区。
 
-[![下载最新发行版 v2.1](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20%E4%B8%8B%E8%BD%BD-v2.1%20%E6%9C%80%E6%96%B0%E5%8F%91%E8%A1%8C%E7%89%88-2EA043)](https://github.com/MCRYII/antigravity-custom-themes/releases/latest)
+[![下载最新发行版 v2.2](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20%E4%B8%8B%E8%BD%BD-v2.2%20%E6%9C%80%E6%96%B0%E5%8F%91%E8%A1%8C%E7%89%88-2EA043)](https://github.com/MCRYII/antigravity-custom-themes/releases/latest)
 
 ---
 
-## ✨ v2.1 核心特性
+## ✨ v2.2 核心特性
 
+- 🚀 **全面适配 Antigravity 2.29+ 版本**：完美贴合官方 2.29.0 全新面板架构，底部终端面板（`bottom-terminal-panel`）实色底漆与 `--btp-tint` 会话行 6px 胶囊、内置浏览器（`builtin-browser-pane`）与上下文用量轨道（`context-usage-panel`）、新旧侧栏新标签页选择器并集（`side-panel-new-tab-view` / `aux-pane-new-tab-view`）无缝兼容。
+- 🎯 **左侧会话与项目行操作按钮 1:1 对齐官方原版**：恢复官方原生 9999px 药丸圆角与 6% 深色微染幽灵按钮（告别刺眼白斑），切断原生伪元素三层遮罩高饱和度矩形异色块（`#6CD1C9`），悬停紧凑自然过渡（52px/34px），未悬停时文字 100% 完整延伸至时间戳，彻底根除提前遮挡与断层空白。
+- 🎙️ **Voice Mode 与听写按钮双模态磨砂胶囊**：发送按钮与听写录音按钮精确选择器锚定，修复宿主原生类名在透明背景下的死黑胶囊与透明图标问题，实时语音通话状态具备红色呼吸微光。
+- 🛡️ **模态标题栏 Alpha 合成与全屏防穿透**：全屏模态遮罩与标题栏动态 Alpha 贴合计算，辅助面板最大化全屏时压制底层消息气泡穿透，视口固定壁纸平整覆盖。
 - 🎨 **6 款精调主题 × 深浅双模 + 官方原版**：浅色低饱和护眼渐变，深色高对比毛玻璃；原生标题栏像素级贴合无缝零色差。
 - 🌗 **宿主原生深浅全权联动**：引擎只读 `html` / `body` 宿主类名判定深浅，绝不在外壳增删类名；深浅外观统一由官方 Settings → Appearance 切换，主题专属名称随宿主状态无刷新自适应。
 - ⚡ **免刷新即时换肤**：点击右上角胶囊下拉菜单，毫秒级切换，零白屏、零等待。
@@ -24,7 +28,7 @@
 
 ## 🚀 一键安装
 
-1. 从 [**Releases · 最新发行版**](https://github.com/MCRYII/antigravity-custom-themes/releases/latest) 下载 `antigravity-custom-themes-v2.1.zip` 并解压到任意目录
+1. 从 [**Releases · 最新发行版**](https://github.com/MCRYII/antigravity-custom-themes/releases/latest) 下载 `antigravity-custom-themes-v2.2.zip` 并解压到任意目录
 2. **双击 `install.bat`**（需已安装官方 Antigravity；若客户端正在运行，脚本会提示自动关闭）
 3. 启动 Antigravity，在 **Settings → Appearance** 中选择深浅外观，点击**顶栏胶囊按钮**切换主题，即刻生效
 
@@ -34,7 +38,7 @@
 
 ## 🖼 主题展示（图片信息经过处理）
 
-### 🌙 深色全景工作区（v2.1 暗夜极光双分屏）
+### 🌙 深色全景工作区（v2.2 暗夜极光双分屏）
 顶栏单胶囊主题切换器与胶囊菜单、暗夜高对比毛玻璃聊天流、右侧集成终端与高亮 ANSI 色板：
 
 ![深色全景工作区](assets/preview-v2-dark.png)
