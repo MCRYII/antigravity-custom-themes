@@ -27,8 +27,10 @@ assets/*.mp4
 assets/audio/
 
 # Theme development sources (kept locally, not part of the distributable package)
-指南.md
+agent.md
+docs
 docs/
+tools
 tools/
 build_themes.py
 gemini-light.css

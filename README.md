@@ -4,7 +4,17 @@
 
 > 📦 本仓库的 GitHub 远端（`MCRYII/antigravity-custom-themes`）为主发行包分发仓：发行包、安装脚本与更新说明均以此处为准；主题开发源码与验收工具保留在本地工作区。
 
-[![下载最新发行版 v2.2](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20%E4%B8%8B%E8%BD%BD-v2.2%20%E6%9C%80%E6%96%B0%E5%8F%91%E8%A1%8C%E7%89%88-2EA043)](https://github.com/MCRYII/antigravity-custom-themes/releases/latest)
+[![下载最新发行版 v2.3](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20%E4%B8%8B%E8%BD%BD-v2.3%20%E6%9C%80%E6%96%B0%E5%8F%91%E8%A1%8C%E7%89%88-2EA043)](https://github.com/MCRYII/antigravity-custom-themes/releases/latest)
+
+---
+
+## ✨ v2.3 核心特性
+
+- 🚀 **全面适配 Antigravity 2.30+ 全新架构**：
+  - **侧边栏辅助标签页（Implementation Plan、bash 等）关闭交互与质感修复**：全面适配 2.30 宿主 `.agy-aux-tab` 嵌套重构结构，内层按钮清空底色，外层 `.agy-aux-tab` 承载磨砂药丸底色与 6px 圆角；关闭按钮所在 `.agy-hover-actions` 与按钮本体强制注入 `pointer-events: auto !important` 并配实色渐显底板，彻底杜绝点击穿透误触切换到底层标签的交互缺陷。
+  - **全屏通透清单扩充**：将 2.30 新版外壳 `.agy-shell`、`.agy-sheet` 与 `.agy-inset-shell` 纳入清空清单，彻底清除灰色底漆与首页荧光，恢复极光四色与单色流光的通透感。
+  - **底部 Composer 毛玻璃卡片恢复**：并集接入 2.30 `.surface-composer` 与 `.surface-composer-card`，消除 2.30 onyx 灰色实底与 5px 重外阴影，重现蓝白磨砂卡片与高光微描边。
+  - **侧边栏选中行恢复磨砂药丸**：并集接入 2.30 `.agy-sidebar-row[data-selected="true"]`，压制 2.30 onyx 纯白实底，回归毛玻璃胶囊。
 
 ---
 
@@ -28,7 +38,7 @@
 
 ## 🚀 一键安装
 
-1. 从 [**Releases · 最新发行版**](https://github.com/MCRYII/antigravity-custom-themes/releases/latest) 下载 `antigravity-custom-themes-v2.2.zip` 并解压到任意目录
+1. 从 [**Releases · 最新发行版**](https://github.com/MCRYII/antigravity-custom-themes/releases/latest) 下载 `antigravity-custom-themes-v2.3.zip` 并解压到任意目录
 2. **双击 `install.bat`**（需已安装官方 Antigravity；若客户端正在运行，脚本会提示自动关闭）
 3. 启动 Antigravity，在 **Settings → Appearance** 中选择深浅外观，点击**顶栏胶囊按钮**切换主题，即刻生效
 
