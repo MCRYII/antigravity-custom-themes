@@ -159,8 +159,7 @@ div[class*="animate-modalFadeIn"]:has([data-testid="mermaid-lightbox-viewport"])
      2) current.js 同步的 html[data-aux-pane-maximized="true"] 运行时兜底
         （兼容不支持复杂 :has() 遍历或按钮浮层被移到 split 容器外的情况）。
    作用域铁律：仅 html[data-ag-custom-theme] 生效，官方原版 100% 零侵入。 */
-html[data-ag-custom-theme][data-aux-pane-maximized="true"] .agy-sheet > div.relative.flex.w-full.h-full.outline-none > div.flex:first-child,
-html[data-ag-custom-theme] div.flex-1.flex.min-h-0.relative:has([data-testid="toggle-maximize-pane"][aria-label="Restore Pane"]) .agy-sheet > div.relative.flex.w-full.h-full.outline-none > div.flex:first-child {
+html[data-ag-custom-theme][data-aux-pane-maximized="true"] .agy-sheet > div.relative.flex.w-full.h-full.outline-none > div.flex:first-child {
   visibility: hidden !important;
   pointer-events: none !important;
 }
