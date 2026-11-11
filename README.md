@@ -4,7 +4,16 @@
 
 > 📦 本仓库的 GitHub 远端（`MCRYII/antigravity-custom-themes`）为主发行包分发仓：发行包、安装脚本与更新说明均以此处为准；主题开发源码与验收工具保留在本地工作区。
 
-[![下载最新发行版 v2.3](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20%E4%B8%8B%E8%BD%BD-v2.3%20%E6%9C%80%E6%96%B0%E5%8F%91%E8%A1%8C%E7%89%88-2EA043)](https://github.com/MCRYII/antigravity-custom-themes/releases/latest)
+[![下载最新发行版 v2.3.1](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20%E4%B8%8B%E8%BD%BD-v2.3.1%20%E6%9C%80%E6%96%B0%E5%8F%91%E8%A1%8C%E7%89%88-2EA043)](https://github.com/MCRYII/antigravity-custom-themes/releases/latest)
+
+---
+
+## ⚡ v2.3.1 核心修复
+
+- 🚀 **彻底解决侧边栏终端与最大化面板实时渲染卡顿问题**：
+  - **切除 GPU 离屏模糊过载**：移除侧边栏终端卡片 `div:has(> .xterm)` 上的实时 `backdrop-filter: blur(16px)`，浅深色底板改用 82%/85% 高性能半透底漆，彻底根除高频光标闪烁与输出重绘时 GPU 离屏模糊管线锁死。
+  - **消除最大化展开补间掉帧**：彻底移除最大化面板过渡期间全视口的 `backdrop-filter` 与 fixed 极光壁纸重绘制；彻底清除高开销 `:has(...)` 祖先级选择器，全面升级为 `html[data-aux-pane-maximized="true"]` 高性能属性选择器。
+  - **DOM 监听短路与动效防抖**：全局 `MutationObserver` 短路过滤终端高频内部变动，在最大化/还原 350ms 动效窗口期内挂起微任务；`isVisibleNode` 淘汰 `getBoundingClientRect`，彻底杜绝主线程强制同步排版（Forced Reflow）。
 
 ---
 
@@ -38,7 +47,7 @@
 
 ## 🚀 一键安装
 
-1. 从 [**Releases · 最新发行版**](https://github.com/MCRYII/antigravity-custom-themes/releases/latest) 下载 `antigravity-custom-themes-v2.3.zip` 并解压到任意目录
+1. 从 [**Releases · 最新发行版**](https://github.com/MCRYII/antigravity-custom-themes/releases/latest) 下载 `antigravity-custom-themes-v2.3.1.zip` 并解压到任意目录
 2. **双击 `install.bat`**（需已安装官方 Antigravity；若客户端正在运行，脚本会提示自动关闭）
 3. 启动 Antigravity，在 **Settings → Appearance** 中选择深浅外观，点击**顶栏胶囊按钮**切换主题，即刻生效
 
