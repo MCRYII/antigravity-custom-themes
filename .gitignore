@@ -11,50 +11,10 @@ desktop.ini
 *.swp
 *.swo
 
-# Temporary & Log Files
+# Temporary, Build & Archive Files
 *.log
 *.tmp
 *.zip
 dist/
 __pycache__/
-
-# Private & review materials (kept locally)
-问题.md
-想法.md
-_review/
-_video/
-assets/*.mp4
-assets/audio/
-
-# Theme development sources (kept locally, not part of the distributable package)
-agent.md
-docs
-docs/
-tools
-tools/
-build_themes.py
-gemini-light.css
-sky-light.css
-cyan-light.css
-orange-light.css
-red-light.css
-purple-light.css
-gemini-dark.css
-sky-dark.css
-cyan-dark.css
-orange-dark.css
-red-dark.css
-purple-dark.css
-stock.css
-
-# Video generation & audio sources
-_video/
-assets/audio/
-
-# Task & runner markers (dotted + plain prefix, plus generated plan drafts)
-.dsh_*
-dsh_*
-.pi_*
-pi_*
-*implementation_plan.md
-
+node_modules/

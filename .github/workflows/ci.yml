@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check current.js syntax
+        run: node --check current.js
+
+      - name: Check Windows script line endings & core files
+        run: |
+          python3 - <<'EOF'
+          import glob
+          import os
+          import sys
+
+          required = [
+              "install.bat",
+              "uninstall.bat",
+              "install.ps1",
+              "current.js",
+              "current.css",
+              "LICENSE",
+              "README.md",
+          ]
+          missing = [f for f in required if not os.path.isfile(f)]
+          if missing:
+              print(f"Missing required files: {missing}")
+              sys.exit(1)
+
+          bat_ps1 = sorted(glob.glob("*.bat") + glob.glob("*.ps1"))
+          if not bat_ps1:
+              print("No .bat or .ps1 files found")
+              sys.exit(1)
+
+          errors = []
+          for path in bat_ps1:
+              data = open(path, "rb").read()
+              crlf = data.count(b"\r\n")
+              lf_only = data.count(b"\n") - crlf
+              if crlf == 0 or lf_only > 0:
+                  errors.append(f"{path}: expected CRLF only (crlf={crlf}, lf_only={lf_only})")
+              if path.endswith(".ps1") and not data.startswith(b"\xef\xbb\xbf"):
+                  errors.append(f"{path}: missing UTF-8 BOM")
+
+          css = open("current.css", "r", encoding="utf-8").read()
+          if css.count("{") != css.count("}"):
+              errors.append(f"current.css: unbalanced braces ({css.count('{')} vs {css.count('}')})")
+
+          if errors:
+              print("\n".join(errors))
+              sys.exit(1)
+          print(f"All checks passed ({len(bat_ps1)} scripts verified).")
+          EOF

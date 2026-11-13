@@ -5,24 +5,25 @@
       定位统一用 absolute（包含块 = 全屏 media-modal），与主题第 16 节同一套结构，
       规避祖先 transform/filter 造成 fixed 包含块漂移、胶囊被裁出视口的「胶囊消失」问题。
    3. 缩放条只用精确 data-testid 选择器（zoom-controls / zoom-reset），
-      严禁 div:has(button):has(span) 泛化写法（会误伤其它浮层；实测「50%」是裸文本节点，
-      旧泛化 span 规则从未命中，现已删除，靠容器级 color 继承上色）。
+      靠容器级 color 继承上色。
    4. 用户消息内部操作浮条彻底摒弃小胶囊，还原为官方原味自然平滑渐隐遮罩。 */
-/* 看图胶囊配色兜底（不加 !important，确保各主题自带的 --media-capsule-* 永远优先，
-   实际只在「官方原版」下生效）：浅色模式 = 浅灰毛玻璃胶囊（告别原生死黑药丸）；
-   深色模式 = 半透浅色胶囊贴近原生观感。图标/文字统一走 --media-capsule-fg，
-   未定义时回落到 var(--foreground)，5 套自定义主题的图标配色不受任何影响。 */
-html:not(.dark):not(.theme-dark) body.theme-light,
-html:not(.dark):not(.theme-dark) body:not(.dark):not(.theme-dark):not(.dark-theme) {
+/* 看图胶囊配色兜底（仅在「官方原版」未设置 data-ag-custom-theme 时生效，
+   确保 6 套自定义主题自带的 --media-capsule-* 永远不受干扰）：
+   浅色模式 = 浅灰毛玻璃胶囊；深色模式 = 半透浅色胶囊贴近原生观感。 */
+html:not([data-ag-custom-theme]):not(.dark):not(.theme-dark):not(.dark-theme) body.theme-light,
+html:not([data-ag-custom-theme]):not(.dark):not(.theme-dark):not(.dark-theme) body:not(.dark):not(.theme-dark):not(.dark-theme) {
   --media-capsule-bg: rgba(240, 240, 242, 0.92);
   --media-capsule-border: rgba(0, 0, 0, 0.10);
   --media-capsule-hover: rgba(0, 0, 0, 0.06);
   --media-capsule-fg: #374151;
   --media-capsule-shadow: 0 6px 20px rgba(0, 0, 0, 0.10);
 }
-body.theme-dark,
-body.dark,
-body.dark-theme {
+html:not([data-ag-custom-theme]).dark body,
+html:not([data-ag-custom-theme]).theme-dark body,
+html:not([data-ag-custom-theme]).dark-theme body,
+html:not([data-ag-custom-theme]) body.theme-dark,
+html:not([data-ag-custom-theme]) body.dark,
+html:not([data-ag-custom-theme]) body.dark-theme {
   --media-capsule-bg: rgba(255, 255, 255, 0.16);
   --media-capsule-border: rgba(255, 255, 255, 0.18);
   --media-capsule-hover: rgba(255, 255, 255, 0.15);
@@ -31,22 +32,13 @@ body.dark-theme {
 }
 /* 看图模态与流程图模态全屏铺满固定定位（消除顶部割裂空白条与半透透底） */
 [data-testid="media-modal"],
-div[class*="animate-backdropFadeIn"]:has(~ div [data-testid="mermaid-lightbox-viewport"]),
 div[class*="animate-backdropFadeIn"]:has(~ * [data-testid="mermaid-lightbox-viewport"]) {
   position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
   inset: 0 !important;
   z-index: 5000 !important;
 }
 div[class*="animate-modalFadeIn"]:has([data-testid="mermaid-lightbox-viewport"]) {
   position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
   inset: 0 !important;
   background: transparent !important;
   background-color: transparent !important;
@@ -101,7 +93,7 @@ div[class*="animate-modalFadeIn"]:has([data-testid="mermaid-lightbox-viewport"])
   align-items: center !important;
   justify-content: center !important;
   cursor: pointer !important;
-  transition: all 0.15s ease !important;
+  transition: background-color 0.15s ease, transform 0.15s ease !important;
   padding: 0 !important;
 }
 [data-testid="media-modal-header"] button:hover {
@@ -154,10 +146,7 @@ div[class*="animate-modalFadeIn"]:has([data-testid="mermaid-lightbox-viewport"])
    修复：只在「自定义主题 + 辅助面板最大化」时对底层左侧会话列施加
    visibility: hidden + pointer-events: none。visibility 不脱离布局流，
    React 虚拟列表的几何、滚动偏移、焦点状态全部原样驻留，Restore 时零跳变。
-   双重状态嗅探：
-     1) CSS :has() 直接读 Restore Pane 的 aria-label（零 JS 依赖的即时路径）；
-     2) current.js 同步的 html[data-aux-pane-maximized="true"] 运行时兜底
-        （兼容不支持复杂 :has() 遍历或按钮浮层被移到 split 容器外的情况）。
+   状态同步：由 current.js 同步的 html[data-aux-pane-maximized="true"] 驱动。
    作用域铁律：仅 html[data-ag-custom-theme] 生效，官方原版 100% 零侵入。 */
 html[data-ag-custom-theme][data-aux-pane-maximized="true"] .agy-sheet > div.relative.flex.w-full.h-full.outline-none > div.flex:first-child {
   visibility: hidden !important;
