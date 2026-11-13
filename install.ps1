@@ -17,7 +17,7 @@ $HookStartMarker = "// === Antigravity custom-theme injection hook $HookVersion 
 $HookEndMarker   = "// === Antigravity custom-theme injection hook $HookVersion (end) ==="
 $Anchor          = "void win.loadURL(url);"
 $Payloads        = @('current.css', 'current.js')
-$CurrentVersion  = 'v2.3.1'
+$CurrentVersion  = 'v2.3.2'
 $Repo            = 'MCRYII/antigravity-custom-themes'
 $ReleasesUrl     = "https://github.com/$Repo/releases/latest"
 
@@ -68,6 +68,13 @@ function Read-AsarHeader([string]$Path) {
     }
 }
 
+function Test-DictKey($Dict, [string]$Key) {
+    if ($Dict -is [System.Collections.IDictionary]) {
+        return ([System.Collections.IDictionary]$Dict).Contains($Key)
+    }
+    return $false
+}
+
 function Find-AsarEntry {
     param(
         [Parameter(Mandatory = $true)]$Header,
@@ -80,7 +87,7 @@ function Find-AsarEntry {
     while ($stack.Count -gt 0) {
         $item = $stack.Pop()
         $node = $item.Node
-        if (-not ($node -is [System.Collections.IDictionary]) -or -not $node.Contains('files')) {
+        if (-not (Test-DictKey $node 'files')) {
             continue
         }
         $files = $node['files']
@@ -91,25 +98,25 @@ function Find-AsarEntry {
             if (-not ($child -is [System.Collections.IDictionary])) { continue }
             $relPath = if ($item.Path) { "$($item.Path)/$key" } else { "$key" }
 
-            if ($child.Contains('files')) {
+            if (Test-DictKey $child 'files') {
                 $stack.Push(@{ Node = $child; Path = $relPath })
                 continue
             }
 
-            if ($key -ceq $FileName -and $child.Contains('size') -and $child.Contains('offset')) {
+            if ($key -ceq $FileName -and (Test-DictKey $child 'size') -and (Test-DictKey $child 'offset')) {
                 $sz  = [int64]$child['size']
                 $off = [int64]$child['offset']
                 if ($off -lt 0 -or $sz -le 0 -or ($Header.DataStart + $off + $sz) -gt $Header.Bytes.LongLength) {
                     continue
                 }
-                $integrity = if ($child.Contains('integrity')) { $child['integrity'] } else { $null }
+                $integrity = if (Test-DictKey $child 'integrity') { $child['integrity'] } else { $null }
                 $hash      = $null
                 $blockSize = 0
                 $blocks    = @()
                 if ($integrity -is [System.Collections.IDictionary]) {
-                    if ($integrity.Contains('hash'))      { $hash      = [string]$integrity['hash'] }
-                    if ($integrity.Contains('blockSize')) { $blockSize = [int]$integrity['blockSize'] }
-                    if ($integrity.Contains('blocks'))    { $blocks    = @($integrity['blocks']) }
+                    if (Test-DictKey $integrity 'hash')      { $hash      = [string]$integrity['hash'] }
+                    if (Test-DictKey $integrity 'blockSize') { $blockSize = [int]$integrity['blockSize'] }
+                    if (Test-DictKey $integrity 'blocks')    { $blocks    = @($integrity['blocks']) }
                 }
                 [void]$results.Add([PSCustomObject]@{
                     Name      = [string]$key
@@ -123,7 +130,7 @@ function Find-AsarEntry {
             }
         }
     }
-    return , $results.ToArray()
+    return $results.ToArray()
 }
 
 function Find-JsonEntrySpan([string]$Json, [string]$EntryKey, [int64]$Offset, [int]$Size) {
@@ -283,7 +290,7 @@ function Test-AsarPatched([string]$path) {
     try {
         if (-not (Test-Path -LiteralPath $path)) { return $false }
         $hdr = Read-AsarHeader -Path $path
-        $entries = Find-AsarEntry -Header $hdr -FileName 'utils.js'
+        $entries = @(Find-AsarEntry -Header $hdr -FileName 'utils.js')
         foreach ($e in $entries) {
             $content = [System.Text.Encoding]::UTF8.GetString($hdr.Bytes, [int]($hdr.DataStart + $e.Offset), $e.Size)
             if ($content.Contains($HookStartMarker) -or $content.Contains($LegacyMarker)) {
@@ -331,7 +338,7 @@ function Get-ClientResources {
             continue
         }
     }
-    return , $found
+    return $found
 }
 
 function Get-RunningClientProcesses([string]$ResourcesDir) {
@@ -351,7 +358,7 @@ function Get-RunningClientProcesses([string]$ResourcesDir) {
             $matched += $p
         }
     }
-    return , $matched
+    return $matched
 }
 
 function Wait-FileUnlocked([string]$FilePath, [int]$TimeoutMs = 5000) {
@@ -419,39 +426,49 @@ if ($running.Count -gt 0) {
     Write-Host "检测到目标目录的 Antigravity 正在运行（$($running.Count) 个进程）。"
     $ans = Read-Host "自动关闭它并继续？(Y/N)"
     if ($ans -match '^[Yy]') {
-        try {
-            foreach ($p in $running) {
+        foreach ($p in $running) {
+            try {
                 if ($p.MainWindowHandle -ne [IntPtr]::Zero) {
                     $null = $p.CloseMainWindow()
                 }
-            }
-            $ids = @($running | ForEach-Object { $_.Id })
-            $sw = [System.Diagnostics.Stopwatch]::StartNew()
-            $alive = $running
+            } catch { }
+        }
+        $ids = @($running | ForEach-Object { $_.Id })
+        $sw = [System.Diagnostics.Stopwatch]::StartNew()
+        $alive = @($running)
+        while ($sw.ElapsedMilliseconds -lt 5000) {
+            $alive = @(Get-Process -Id $ids -ErrorAction SilentlyContinue)
+            if ($alive.Count -eq 0) { break }
+            Start-Sleep -Milliseconds 250
+        }
+        if ($alive.Count -gt 0) {
+            $alive | Stop-Process -Force -ErrorAction SilentlyContinue
+            $sw.Restart()
             while ($sw.ElapsedMilliseconds -lt 5000) {
                 $alive = @(Get-Process -Id $ids -ErrorAction SilentlyContinue)
                 if ($alive.Count -eq 0) { break }
                 Start-Sleep -Milliseconds 250
             }
-            if ($alive.Count -gt 0) {
-                $alive | Stop-Process -Force -ErrorAction Stop
-                $sw.Restart()
-                while ($sw.ElapsedMilliseconds -lt 5000) {
-                    $alive = @(Get-Process -Id $ids -ErrorAction SilentlyContinue)
-                    if ($alive.Count -eq 0) { break }
-                    Start-Sleep -Milliseconds 250
-                }
-            }
-            if ($alive.Count -gt 0) {
-                Die "关闭 Antigravity 超时，请手动关闭后重试。"
-            }
-            if (-not (Wait-FileUnlocked -FilePath $AsarPath -TimeoutMs 5000)) {
-                Die "app.asar 文件句柄尚未释放，请稍后或手动关闭相关进程后重试。"
-            }
-            Ok "已关闭 Antigravity"
-        } catch {
-            Die "关闭 Antigravity 失败（可能需要管理员权限），请手动关闭后重试。"
         }
+        if ($alive.Count -gt 0) {
+            foreach ($p in $alive) {
+                try { & taskkill.exe /F /T /PID $p.Id 2>$null | Out-Null } catch { }
+            }
+            $sw.Restart()
+            while ($sw.ElapsedMilliseconds -lt 3000) {
+                $alive = @(Get-Process -Id $ids -ErrorAction SilentlyContinue)
+                if ($alive.Count -eq 0) { break }
+                Start-Sleep -Milliseconds 250
+            }
+        }
+        $stillRunning = @(Get-RunningClientProcesses -ResourcesDir $ResDir)
+        if ($stillRunning.Count -gt 0) {
+            Die "关闭 Antigravity 失败（进程仍在运行，PID: $(($stillRunning | ForEach-Object { $_.Id }) -join ', ')），可能需要管理员权限或请手动关闭后重试。"
+        }
+        if (-not (Wait-FileUnlocked -FilePath $AsarPath -TimeoutMs 5000)) {
+            Die "app.asar 文件句柄尚未释放，请稍后或手动关闭相关进程后重试。"
+        }
+        Ok "已关闭 Antigravity"
     } else {
         Die "请手动关闭 Antigravity 后重新运行本脚本。"
     }
@@ -475,7 +492,11 @@ if ($Uninstall) {
                 if (Test-AsarPatched $tmpRestore) {
                     throw "备份文件校验异常（仍含钩子）"
                 }
-                [System.IO.File]::Replace($tmpRestore, $AsarPath, $null, $true)
+                try {
+                    [System.IO.File]::Replace($tmpRestore, $AsarPath, $null, $true)
+                } catch {
+                    Move-Item -LiteralPath $tmpRestore -Destination $AsarPath -Force
+                }
                 $restoredHash = (Get-FileHash -LiteralPath $AsarPath -Algorithm SHA256).Hash
                 if ($restoredHash -ne $expectedHash -or (Test-AsarPatched $AsarPath)) {
                     throw "还原后 app.asar 哈希校验失败"
@@ -504,7 +525,7 @@ try {
     Die "解析 app.asar 失败：$($_.Exception.Message)"
 }
 
-$entries = Find-AsarEntry -Header $hdr -FileName 'utils.js'
+$entries = @(Find-AsarEntry -Header $hdr -FileName 'utils.js')
 if ($entries.Count -eq 0) {
     Die "asar 头部未找到 utils.js 条目（客户端结构可能已变化），已取消修改"
 }
@@ -647,7 +668,7 @@ $HookStartMarker
 
         # 替换前先对 app.asar.tmp 原始字节流做整包 SHA256 + blocks 逐块 SHA256 自检
         $vHdr = Read-AsarHeader -Path $TmpPath
-        $vEntries = Find-AsarEntry -Header $vHdr -FileName 'utils.js'
+        $vEntries = @(Find-AsarEntry -Header $vHdr -FileName 'utils.js')
         $tmpVerified = $false
         foreach ($ve in $vEntries) {
             $vContent = [System.Text.Encoding]::UTF8.GetString($vHdr.Bytes, [int]($vHdr.DataStart + $ve.Offset), $ve.Size)
@@ -688,7 +709,7 @@ $HookStartMarker
 # ---------- 最终只读自检：确认线上 app.asar 钩子存在且原始字节整包+分块 integrity 一致 ----------
 try {
     $finalHdr = Read-AsarHeader -Path $AsarPath
-    $finalEntries = Find-AsarEntry -Header $finalHdr -FileName 'utils.js'
+    $finalEntries = @(Find-AsarEntry -Header $finalHdr -FileName 'utils.js')
     $verified = $false
     foreach ($fe in $finalEntries) {
         $fContent = [System.Text.Encoding]::UTF8.GetString($finalHdr.Bytes, [int]($finalHdr.DataStart + $fe.Offset), $fe.Size)
