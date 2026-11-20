@@ -4,7 +4,13 @@
 
 > 📦 本仓库的 GitHub 远端（`MCRYII/antigravity-custom-themes`）为主发行包与源码分发仓：全部主题样式与切换引擎均以 Token 化单文件形式内置于 `current.js` 中，开箱即用。
 
-[![下载最新发行版 v2.3.2](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20%E4%B8%8B%E8%BD%BD-v2.3.2%20%E6%9C%80%E6%96%B0%E5%8F%91%E8%A1%8C%E7%89%88-2EA043)](https://github.com/MCRYII/antigravity-custom-themes/releases/latest)
+[![下载最新发行版 v2.3.3](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20%E4%B8%8B%E8%BD%BD-v2.3.3%20%E6%9C%80%E6%96%B0%E5%8F%91%E8%A1%8C%E7%89%88-2EA043)](https://github.com/MCRYII/antigravity-custom-themes/releases/latest)
+
+---
+
+## ⚡ v2.3.3 核心修复
+
+- **官方原版（stock）零侵入恢复**：移除 `current.css` 中对看图与流程图模态的全局样式覆盖及原版兜底变量，切回「官方原版」时看图顶部操作栏、底部缩放条与遮罩 100% 恢复官方原厂原生渲染（6 套自定义主题看图胶囊样式不变）。
 
 ---
 
@@ -45,7 +51,7 @@
 - ⚡ **免刷新即时换肤**：点击右上角胶囊下拉菜单，毫秒级切换，零白屏、零等待。
 - 💾 **主题记忆**：基于客户端原生持久化存储（`app_storage.json` 的 `custom-theme-id`），关闭重启后自动恢复上次主题。
 - 📌 **侧栏吸顶与置顶项共存**：完美对齐官方 TanStack Virtual 原生定位机制，未滚动时 100% 通透无色块、滚动触顶时视口固定渐变平整遮字，彻底告别压盖冲突。
-- 🖼 **看图体验优化**：图片查看器的顶部操作坞与底部缩放条统一为毛玻璃胶囊（官方原版下告别死黑药丸），右上角系统按钮区与遮罩同色贴合。
+- 🖼 **看图体验优化**：自定义主题下图片查看器的顶部操作坞与底部缩放条统一为毛玻璃胶囊，右上角系统按钮区与遮罩同色贴合；官方原版保持 100% 原生渲染。
 - 📜 **精致滚动条**：5px 半透明胶囊常态，悬停渐变为主题色流光。
 - 🖥 **深色终端高对比 ANSI**：16 色均针对深色基底重新校准（WCAG 对比度全部 ≥ 4.55:1，实测 6.2:1 ~ 13.5:1），配合高性能半透终端底板。
 - 🔁 **幂等安装 / 一键卸载**：脚本可重复运行，卸载完整还原原生客户端。
@@ -54,7 +60,7 @@
 
 ## 🚀 一键安装
 
-1. 从 [**Releases · 最新发行版**](https://github.com/MCRYII/antigravity-custom-themes/releases/latest) 下载 `antigravity-custom-themes-v2.3.2.zip` 并解压到任意目录
+1. 从 [**Releases · 最新发行版**](https://github.com/MCRYII/antigravity-custom-themes/releases/latest) 下载 `antigravity-custom-themes-v2.3.3.zip` 并解压到任意目录
 2. **双击 `install.bat`**（需已安装官方 Antigravity；若客户端正在运行，脚本会提示自动关闭）
 3. 启动 Antigravity，在 **Settings → Appearance** 中选择深浅外观，点击**顶栏胶囊按钮**切换主题，即刻生效
 

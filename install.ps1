@@ -17,7 +17,7 @@ $HookStartMarker = "// === Antigravity custom-theme injection hook $HookVersion 
 $HookEndMarker   = "// === Antigravity custom-theme injection hook $HookVersion (end) ==="
 $Anchor          = "void win.loadURL(url);"
 $Payloads        = @('current.css', 'current.js')
-$CurrentVersion  = 'v2.3.2'
+$CurrentVersion  = 'v2.3.3'
 $Repo            = 'MCRYII/antigravity-custom-themes'
 $ReleasesUrl     = "https://github.com/$Repo/releases/latest"
 
