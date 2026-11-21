@@ -4,7 +4,13 @@
 
 > 📦 本仓库的 GitHub 远端（`MCRYII/antigravity-custom-themes`）为主发行包与源码分发仓：全部主题样式与切换引擎均以 Token 化单文件形式内置于 `current.js` 中，开箱即用。
 
-[![下载最新发行版 v2.3.3](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20%E4%B8%8B%E8%BD%BD-v2.3.3%20%E6%9C%80%E6%96%B0%E5%8F%91%E8%A1%8C%E7%89%88-2EA043)](https://github.com/MCRYII/antigravity-custom-themes/releases/latest)
+[![下载最新发行版 v2.3.4](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20%E4%B8%8B%E8%BD%BD-v2.3.4%20%E6%9C%80%E6%96%B0%E5%8F%91%E8%A1%8C%E7%89%88-2EA043)](https://github.com/MCRYII/antigravity-custom-themes/releases/latest)
+
+---
+
+## ⚡ v2.3.4 核心修复
+
+- **适配新版 Antigravity 客户端代码注入锚点**：`install.ps1` 升级为多版本锚点列表（优先匹配新版 `void loadHubWindowUrl(win, url, { skipBootstrapMint });`，同时向下兼容旧版 `void win.loadURL(url);`），修复客户端更新后安装时报「未找到代码注入锚点」的问题。
 
 ---
 
@@ -60,7 +66,7 @@
 
 ## 🚀 一键安装
 
-1. 从 [**Releases · 最新发行版**](https://github.com/MCRYII/antigravity-custom-themes/releases/latest) 下载 `antigravity-custom-themes-v2.3.3.zip` 并解压到任意目录
+1. 从 [**Releases · 最新发行版**](https://github.com/MCRYII/antigravity-custom-themes/releases/latest) 下载 `antigravity-custom-themes-v2.3.4.zip` 并解压到任意目录
 2. **双击 `install.bat`**（需已安装官方 Antigravity；若客户端正在运行，脚本会提示自动关闭）
 3. 启动 Antigravity，在 **Settings → Appearance** 中选择深浅外观，点击**顶栏胶囊按钮**切换主题，即刻生效
 

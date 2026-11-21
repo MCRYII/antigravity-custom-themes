@@ -15,9 +15,12 @@ $LegacyMarker    = 'custom-theme injection hook'
 $HookVersion     = 'v1'
 $HookStartMarker = "// === Antigravity custom-theme injection hook $HookVersion (start) ==="
 $HookEndMarker   = "// === Antigravity custom-theme injection hook $HookVersion (end) ==="
-$Anchor          = "void win.loadURL(url);"
+$Anchors         = @(
+    "void loadHubWindowUrl(win, url, { skipBootstrapMint });",
+    "void win.loadURL(url);"
+)
 $Payloads        = @('current.css', 'current.js')
-$CurrentVersion  = 'v2.3.3'
+$CurrentVersion  = 'v2.3.4'
 $Repo            = 'MCRYII/antigravity-custom-themes'
 $ReleasesUrl     = "https://github.com/$Repo/releases/latest"
 
@@ -530,19 +533,22 @@ if ($entries.Count -eq 0) {
     Die "asar 头部未找到 utils.js 条目（客户端结构可能已变化），已取消修改"
 }
 
-$entry = $null; $utils = $null
+$entry = $null; $utils = $null; $matchedAnchor = $null
 $hasLatestHook = $false; $hasLegacyHook = $false
 foreach ($e in $entries) {
     $content = [System.Text.Encoding]::UTF8.GetString($hdr.Bytes, [int]($hdr.DataStart + $e.Offset), $e.Size)
-    if ($content.Contains($Anchor)) {
-        $entry = $e; $utils = $content
-        if ($utils.Contains($HookStartMarker)) {
-            $hasLatestHook = $true
-        } elseif ($utils.Contains($LegacyMarker)) {
-            $hasLegacyHook = $true
+    foreach ($cand in $Anchors) {
+        if ($content.Contains($cand)) {
+            $entry = $e; $utils = $content; $matchedAnchor = $cand
+            if ($utils.Contains($HookStartMarker)) {
+                $hasLatestHook = $true
+            } elseif ($utils.Contains($LegacyMarker)) {
+                $hasLegacyHook = $true
+            }
+            break
         }
-        break
     }
+    if ($entry) { break }
 }
 if (-not $entry) { Die "未找到代码注入锚点（客户端版本可能已变化），已取消修改" }
 
@@ -593,7 +599,7 @@ if ($skipPatch) {
         Die "无法在 asar 头部 JSON 中定位目标 utils.js 条目边界，已取消修改"
     }
 
-    $anchorIdx = $utils.IndexOf($Anchor)
+    $anchorIdx = $utils.IndexOf($matchedAnchor)
     if ($anchorIdx -lt 0) { Die "未找到代码注入锚点，已取消修改" }
     $lineStart = $utils.LastIndexOf("`n", $anchorIdx) + 1
     $prefix    = $utils.Substring($lineStart, $anchorIdx - $lineStart)
@@ -672,7 +678,7 @@ $HookStartMarker
         $tmpVerified = $false
         foreach ($ve in $vEntries) {
             $vContent = [System.Text.Encoding]::UTF8.GetString($vHdr.Bytes, [int]($vHdr.DataStart + $ve.Offset), $ve.Size)
-            if (-not $vContent.Contains($HookStartMarker) -or -not $vContent.Contains($Anchor)) { continue }
+            if (-not $vContent.Contains($HookStartMarker) -or -not $vContent.Contains($matchedAnchor)) { continue }
             if (Test-AsarBytesIntegrity -Header $vHdr -Entry $ve) {
                 $tmpVerified = $true
                 break
