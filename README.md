@@ -11,6 +11,7 @@
 ## ⚡ v2.3.4 核心修复
 
 - **适配新版 Antigravity 客户端代码注入锚点**：`install.ps1` 升级为多版本锚点列表（优先匹配新版 `void loadHubWindowUrl(win, url, { skipBootstrapMint });`，同时向下兼容旧版 `void win.loadURL(url);`），修复客户端更新后安装时报「未找到代码注入锚点」的问题。
+- **修复侧边栏终端残余转圈复发**：将 xterm 挂载后隐藏底层未卸载 loading 旋转图标的规则正式回填至 6 款浅色母版及深色变体第 19 节（并补齐独立终端标签页 `[data-testid="terminal-tab-surface"]` 选择器），彻底解决重编覆盖回退问题。
 
 ---
 
